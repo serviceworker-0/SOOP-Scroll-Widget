@@ -1,478 +1,188 @@
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-  <title>Pastel Sliding Door</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: transparent;
+  }
 
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: transparent;
-    }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
 
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
+  .scene {
+    --left-shift: -4%;
+    --right-shift: 4%;
+    --hint-opacity: 0.96;
 
-    .scene {
-      --left-shift: -4%;
-      --right-shift: 4%;
-      --hint-opacity: 0.96;
+    position: relative;
+    width: min(94vw, 860px);
+    max-height: 90vh;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 10px solid #d29a52;
+    border-radius: 12px;
+    outline: none;
+    background: #f8eccf;
+    box-shadow:
+      0 22px 50px rgb(104 67 24 / 22%),
+      inset 0 0 0 2px #f3c778;
+    cursor: ew-resize;
+    touch-action: none;
+  }
 
-      position: relative;
-      width: min(94vw, 860px);
-      max-height: 90vh;
-      aspect-ratio: 16 / 9;
-      overflow: hidden;
-      border: 10px solid #9c7464;
-      border-radius: 12px;
-      outline: none;
-      background: #f5dfe4;
-      box-shadow:
-        0 22px 50px rgb(75 48 41 / 25%);
-      cursor: ew-resize;
-      touch-action: none;
-    }
+  .content {
+    position: absolute;
+    inset: 0;
+    background: #f8eccf;
+  }
 
-    .content {
-      position: absolute;
-      inset: 0;
-      background: #f5dfe4;
-    }
+  .content img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
 
-    .content img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      pointer-events: none;
-      -webkit-user-drag: none;
-    }
+  .door {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 3;
+    width: 50%;
+    overflow: hidden;
+    background:
+      linear-gradient(
+        90deg,
+        #dfad60,
+        #efca87 48%,
+        #dba657
+      );
+    box-shadow:
+      inset 0 0 16px rgb(116 72 21 / 14%);
+    transition:
+      transform 0.5s
+      cubic-bezier(.2, .8, .2, 1);
+    will-change: transform;
+  }
 
-    .door {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      z-index: 3;
-      width: 50%;
-      overflow: hidden;
-      background: #d9ad9f;
-      box-shadow:
-        inset 0 0 14px rgb(105 69 57 / 15%);
-      transition:
-        transform 0.5s
-        cubic-bezier(.2, .8, .2, 1);
-      will-change: transform;
-    }
+  .door::before {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    border: 7px solid #c98d41;
+    background-color: #fff3cf;
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent calc(100% - 4px),
+        #ddb36d calc(100% - 4px)
+      ),
+      linear-gradient(
+        0deg,
+        transparent calc(100% - 4px),
+        #ddb36d calc(100% - 4px)
+      );
+    background-size:
+      33.333% 100%,
+      100% 33.333%;
+    box-shadow:
+      inset 0 0 14px rgb(148 96 31 / 10%);
+  }
 
-    .door::before {
-      content: "";
-      position: absolute;
-      inset: 14px;
-      border: 7px solid #b98d7b;
-      background-color: #f7ebe5;
-      background-image:
-        linear-gradient(
-          90deg,
-          transparent calc(100% - 4px),
-          #c9a393 calc(100% - 4px)
-        ),
-        linear-gradient(
-          0deg,
-          transparent calc(100% - 4px),
-          #c9a393 calc(100% - 4px)
-        );
-      background-size:
-        33.333% 100%,
-        100% 33.333%;
-      box-shadow:
-        inset 0 0 12px rgb(128 91 73 / 9%);
-    }
+  .door.left {
+    left: 0;
+    border-right: 5px solid #9f682c;
+    transform:
+      translateX(var(--left-shift));
+  }
 
-    .door.left {
-      left: 0;
-      border-right: 5px solid #8f6959;
-      transform:
-        translateX(var(--left-shift));
-    }
+  .door.right {
+    right: 0;
+    border-left: 5px solid #9f682c;
+    transform:
+      translateX(var(--right-shift));
+  }
 
-    .door.right {
-      right: 0;
-      border-left: 5px solid #8f6959;
-      transform:
-        translateX(var(--right-shift));
-    }
+  .handle {
+    position: absolute;
+    top: 50%;
+    z-index: 5;
+    width: 13px;
+    height: 46px;
+    transform: translateY(-50%);
+    border: 2px solid #4b2d13;
+    border-radius: 999px;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        90deg,
+        #543317,
+        #8a5c2a 48%,
+        #543317
+      );
+    box-shadow:
+      inset 2px 0 3px rgb(255 234 183 / 24%),
+      0 2px 5px rgb(74 44 17 / 28%);
+  }
 
-    .handle {
-      position: absolute;
-      top: 50%;
-      z-index: 5;
-      width: 13px;
-      height: 46px;
-      transform: translateY(-50%);
-      border-radius: 999px;
-      pointer-events: none;
-      background: #876255;
-      box-shadow:
-        inset 2px 0 3px rgb(255 255 255 / 22%),
-        0 2px 5px rgb(80 50 40 / 25%);
-    }
+  .door.left .handle {
+    right: 18px;
+  }
 
-    .door.left .handle {
-      right: 18px;
-    }
+  .door.right .handle {
+    left: 18px;
+  }
 
-    .door.right .handle {
-      left: 18px;
-    }
+  .hint {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    z-index: 8;
+    transform: translateX(-50%);
+    padding: 7px 11px;
+    border-radius: 999px;
+    color: #fff8e8;
+    background: rgb(72 45 19 / 64%);
+    font:
+      600 12px / 1
+      system-ui,
+      sans-serif;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: var(--hint-opacity);
+    transition: opacity 0.45s ease;
+  }
 
+  .scene.dragging .door,
+  .scene.dragging .hint {
+    transition: none;
+  }
+
+  .scene:focus-visible {
+    box-shadow:
+      0 0 0 4px rgb(226 172 93 / 62%),
+      0 22px 50px rgb(104 67 24 / 22%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .door,
     .hint {
-      position: absolute;
-      left: 50%;
-      bottom: 14px;
-      z-index: 8;
-      transform: translateX(-50%);
-      padding: 7px 11px;
-      border-radius: 999px;
-      color: #fff;
-      background: rgb(24 18 13 / 58%);
-      font:
-        600 12px / 1
-        system-ui,
-        sans-serif;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: var(--hint-opacity);
-      transition: opacity 0.45s ease;
+      transition: none !important;
     }
-
-    .scene.dragging .door,
-    .scene.dragging .hint {
-      transition: none;
-    }
-
-    .scene:focus-visible {
-      box-shadow:
-        0 0 0 4px rgb(203 151 130 / 60%),
-        0 22px 50px rgb(75 48 41 / 25%);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .door,
-      .hint {
-        transition: none !important;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <div
-    id="scene"
-    class="scene"
-    role="slider"
-    tabindex="0"
-    aria-label="미닫이문 열기"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    aria-valuenow="4"
-  >
-    <div class="content"></div>
-
-    <div class="door left">
-      <span class="handle"></span>
-    </div>
-
-    <div class="door right">
-      <span class="handle"></span>
-    </div>
-
-    <div class="hint">
-      누구냐? 문 닫아라.
-    </div>
-  </div>
-
-  <script>
-    const root =
-      document.querySelector("#scene");
-
-    let open = 0.04;
-    let dragging = false;
-    let moved = false;
-    let suppressClick = false;
-    let pointerId = null;
-    let startX = 0;
-    let startOpen = open;
-    let lockedDirection = 0;
-    let userInteracted = false;
-
-    function clamp(value) {
-      return Math.max(
-        0,
-        Math.min(1, value)
-      );
-    }
-
-    function render(value, animate = false) {
-      open = clamp(value);
-
-      root.classList.toggle(
-        "dragging",
-        !animate
-      );
-
-      root.style.setProperty(
-        "--left-shift",
-        `${(-open * 100).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--right-shift",
-        `${(open * 100).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--hint-opacity",
-        String(1 - open)
-      );
-
-      root.setAttribute(
-        "aria-valuenow",
-        String(Math.round(open * 100))
-      );
-    }
-
-    root.addEventListener(
-      "pointerdown",
-      event => {
-        if (
-          event.button !== 0 ||
-          event.isPrimary === false ||
-          dragging
-        ) {
-          return;
-        }
-
-        event.preventDefault();
-
-        userInteracted = true;
-        dragging = true;
-        moved = false;
-        suppressClick = false;
-        pointerId = event.pointerId;
-        startX = event.clientX;
-        startOpen = open;
-        lockedDirection = 0;
-
-        root.classList.add("dragging");
-
-        try {
-          root.setPointerCapture(pointerId);
-        } catch {}
-      }
-    );
-
-    root.addEventListener(
-      "pointermove",
-      event => {
-        if (
-          !dragging ||
-          event.pointerId !== pointerId
-        ) {
-          return;
-        }
-
-        const deltaX =
-          event.clientX - startX;
-
-        const distance =
-          Math.abs(deltaX);
-
-        if (distance > 4) {
-          moved = true;
-        }
-
-        if (
-          lockedDirection === 0 &&
-          distance >= 8
-        ) {
-          lockedDirection =
-            deltaX > 0 ? 1 : -1;
-        }
-
-        if (lockedDirection === 0) {
-          return;
-        }
-
-        const rect =
-          root.getBoundingClientRect();
-
-        const directedDistance =
-          Math.max(
-            0,
-            deltaX * lockedDirection
-          );
-
-        const change =
-          directedDistance /
-          (rect.width * 0.45);
-
-        const next =
-          startOpen >= 0.5
-            ? startOpen - change
-            : startOpen + change;
-
-        render(next, false);
-      }
-    );
-
-    function finishDrag(event) {
-      if (
-        !dragging ||
-        event.pointerId !== pointerId
-      ) {
-        return;
-      }
-
-      dragging = false;
-      suppressClick = moved;
-      moved = false;
-
-      try {
-        root.releasePointerCapture(pointerId);
-      } catch {}
-
-      pointerId = null;
-      lockedDirection = 0;
-
-      render(
-        open >= 0.48 ? 1 : 0,
-        true
-      );
-    }
-
-    root.addEventListener(
-      "pointerup",
-      finishDrag
-    );
-
-    root.addEventListener(
-      "pointercancel",
-      finishDrag
-    );
-
-    root.addEventListener(
-      "lostpointercapture",
-      event => {
-        if (
-          dragging &&
-          event.pointerId === pointerId
-        ) {
-          dragging = false;
-          pointerId = null;
-          lockedDirection = 0;
-
-          render(
-            open >= 0.48 ? 1 : 0,
-            true
-          );
-        }
-      }
-    );
-
-    root.addEventListener(
-      "click",
-      () => {
-        if (suppressClick) {
-          suppressClick = false;
-          return;
-        }
-
-        userInteracted = true;
-
-        render(
-          startOpen >= 0.5 ? 0 : 1,
-          true
-        );
-      }
-    );
-
-    root.addEventListener(
-      "keydown",
-      event => {
-        let next = open;
-
-        if (
-          event.key === "ArrowRight" ||
-          event.key === "ArrowUp"
-        ) {
-          next += event.shiftKey
-            ? 0.2
-            : 0.08;
-        } else if (
-          event.key === "ArrowLeft" ||
-          event.key === "ArrowDown"
-        ) {
-          next -= event.shiftKey
-            ? 0.2
-            : 0.08;
-        } else if (event.key === "Home") {
-          next = 0;
-        } else if (event.key === "End") {
-          next = 1;
-        } else if (
-          event.key === "Enter" ||
-          event.key === " "
-        ) {
-          next = open >= 0.5 ? 0 : 1;
-        } else {
-          return;
-        }
-
-        event.preventDefault();
-        userInteracted = true;
-
-        render(next, true);
-      }
-    );
-
-    if (
-      !matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches
-    ) {
-      setTimeout(() => {
-        if (userInteracted) return;
-
-        render(1, true);
-
-        setTimeout(() => {
-          if (!userInteracted) {
-            render(0.04, true);
-          }
-        }, 1400);
-      }, 650);
-    }
-
-    render(open, true);
-  </script>
-</body>
-</html>
+  }
+</style>
