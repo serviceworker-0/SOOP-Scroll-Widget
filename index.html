@@ -33,9 +33,8 @@
     }
 
     .scene {
-      --left-shift: -4%;
-      --right-shift: 4%;
-      --hint-opacity: 0.96;
+      --left-shift: 0%;
+      --right-shift: 0%;
 
       position: relative;
       width: min(94vw, 860px);
@@ -174,10 +173,14 @@
         sans-serif;
       white-space: nowrap;
       pointer-events: none;
-      opacity: var(--hint-opacity);
-      transition: opacity 0.45s ease;
+      opacity: 0;
+      transition: opacity 0.2s ease;
     }
-
+    
+    .hint.visible {
+      opacity: 1;
+    }
+    
     .scene.dragging .door,
     .scene.dragging .hint {
       transition: none;
@@ -221,274 +224,349 @@
       <span class="handle"></span>
     </div>
 
-    <div class="hint">
+    <div class="hint hint-closed">
       누구냐? 문 닫아라.
     </div>
-  </div>
+    
+    <div class="hint hint-open">
+      뭘 보냐. 썩 나가라.
+    </div>
 
-  <script>
-    const root =
-      document.querySelector("#scene");
-
-    let open = 0.04;
-    let dragging = false;
-    let moved = false;
-    let suppressClick = false;
-    let pointerId = null;
-    let startX = 0;
-    let startOpen = open;
-    let lockedDirection = 0;
-    let userInteracted = false;
-
-    function clamp(value) {
-      return Math.max(
-        0,
-        Math.min(1, value)
-      );
-    }
-
-    function render(value, animate = false) {
-      open = clamp(value);
-
-      root.classList.toggle(
-        "dragging",
-        !animate
-      );
-
-      root.style.setProperty(
-        "--left-shift",
-        `${(-open * 100).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--right-shift",
-        `${(open * 100).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--hint-opacity",
-        String(1 - open)
-      );
-
-      root.setAttribute(
-        "aria-valuenow",
-        String(Math.round(open * 100))
-      );
-    }
-
-    root.addEventListener(
-      "pointerdown",
-      event => {
-        if (
-          event.button !== 0 ||
-          event.isPrimary === false ||
-          dragging
-        ) {
+    <script>
+      const root =
+        document.querySelector("#scene");
+    
+      const closedHint =
+        document.querySelector(".hint-closed");
+    
+      const openHint =
+        document.querySelector(".hint-open");
+    
+      let open = 0;
+      let dragging = false;
+      let moved = false;
+      let suppressClick = false;
+      let pointerId = null;
+      let startX = 0;
+      let startOpen = open;
+      let lockedDirection = 0;
+      let userInteracted = false;
+      let hintTimer = 0;
+    
+      function clamp(value) {
+        return Math.max(
+          0,
+          Math.min(1, value)
+        );
+      }
+    
+      function hideHints() {
+        clearTimeout(hintTimer);
+    
+        closedHint.classList.remove("visible");
+        openHint.classList.remove("visible");
+      }
+    
+      function showHint(type) {
+        hideHints();
+    
+        if (type === "closed") {
+          closedHint.classList.add("visible");
+        }
+    
+        if (type === "open") {
+          openHint.classList.add("visible");
+        }
+      }
+    
+      function updateHint(
+        animate = false,
+        immediate = false
+      ) {
+        hideHints();
+    
+        if (dragging) {
           return;
         }
-
-        event.preventDefault();
-
-        userInteracted = true;
-        dragging = true;
-        moved = false;
-        suppressClick = false;
-        pointerId = event.pointerId;
-        startX = event.clientX;
-        startOpen = open;
-        lockedDirection = 0;
-
-        root.classList.add("dragging");
-
-        try {
-          root.setPointerCapture(pointerId);
-        } catch {}
+    
+        let type = "";
+    
+        if (open <= 0.001) {
+          type = "closed";
+        } else if (open >= 0.999) {
+          type = "open";
+        }
+    
+        if (!type) {
+          return;
+        }
+    
+        if (immediate || !animate) {
+          showHint(type);
+          return;
+        }
+    
+        const expectedOpen = open;
+    
+        hintTimer = setTimeout(() => {
+          if (
+            dragging ||
+            Math.abs(open - expectedOpen) > 0.001
+          ) {
+            return;
+          }
+    
+          showHint(type);
+        }, 540);
       }
-    );
-
-    root.addEventListener(
-      "pointermove",
-      event => {
+    
+      function render(
+        value,
+        animate = false,
+        immediateHint = false
+      ) {
+        open = clamp(value);
+    
+        root.classList.toggle(
+          "dragging",
+          !animate
+        );
+    
+        root.style.setProperty(
+          "--left-shift",
+          `${(-open * 100).toFixed(3)}%`
+        );
+    
+        root.style.setProperty(
+          "--right-shift",
+          `${(open * 100).toFixed(3)}%`
+        );
+    
+        root.setAttribute(
+          "aria-valuenow",
+          String(Math.round(open * 100))
+        );
+    
+        updateHint(
+          animate,
+          immediateHint
+        );
+      }
+    
+      root.addEventListener(
+        "pointerdown",
+        event => {
+          if (
+            event.button !== 0 ||
+            event.isPrimary === false ||
+            dragging
+          ) {
+            return;
+          }
+    
+          event.preventDefault();
+    
+          userInteracted = true;
+          dragging = true;
+          moved = false;
+          suppressClick = false;
+          pointerId = event.pointerId;
+          startX = event.clientX;
+          startOpen = open;
+          lockedDirection = 0;
+    
+          root.classList.add("dragging");
+          hideHints();
+    
+          try {
+            root.setPointerCapture(pointerId);
+          } catch {}
+        }
+      );
+    
+      root.addEventListener(
+        "pointermove",
+        event => {
+          if (
+            !dragging ||
+            event.pointerId !== pointerId
+          ) {
+            return;
+          }
+    
+          const deltaX =
+            event.clientX - startX;
+    
+          const distance =
+            Math.abs(deltaX);
+    
+          if (distance > 4) {
+            moved = true;
+          }
+    
+          if (
+            lockedDirection === 0 &&
+            distance >= 8
+          ) {
+            lockedDirection =
+              deltaX > 0 ? 1 : -1;
+          }
+    
+          if (lockedDirection === 0) {
+            return;
+          }
+    
+          const rect =
+            root.getBoundingClientRect();
+    
+          const directedDistance =
+            Math.max(
+              0,
+              deltaX * lockedDirection
+            );
+    
+          const change =
+            directedDistance /
+            (rect.width * 0.45);
+    
+          const next =
+            startOpen >= 0.5
+              ? startOpen - change
+              : startOpen + change;
+    
+          render(next, false);
+        }
+      );
+    
+      function finishDrag(event) {
         if (
           !dragging ||
           event.pointerId !== pointerId
         ) {
           return;
         }
-
-        const deltaX =
-          event.clientX - startX;
-
-        const distance =
-          Math.abs(deltaX);
-
-        if (distance > 4) {
-          moved = true;
-        }
-
-        if (
-          lockedDirection === 0 &&
-          distance >= 8
-        ) {
-          lockedDirection =
-            deltaX > 0 ? 1 : -1;
-        }
-
-        if (lockedDirection === 0) {
-          return;
-        }
-
-        const rect =
-          root.getBoundingClientRect();
-
-        const directedDistance =
-          Math.max(
-            0,
-            deltaX * lockedDirection
-          );
-
-        const change =
-          directedDistance /
-          (rect.width * 0.45);
-
-        const next =
-          startOpen >= 0.5
-            ? startOpen - change
-            : startOpen + change;
-
-        render(next, false);
-      }
-    );
-
-    function finishDrag(event) {
-      if (
-        !dragging ||
-        event.pointerId !== pointerId
-      ) {
-        return;
-      }
-
-      dragging = false;
-      suppressClick = moved;
-      moved = false;
-
-      try {
-        root.releasePointerCapture(pointerId);
-      } catch {}
-
-      pointerId = null;
-      lockedDirection = 0;
-
-      render(
-        open >= 0.48 ? 1 : 0,
-        true
-      );
-    }
-
-    root.addEventListener(
-      "pointerup",
-      finishDrag
-    );
-
-    root.addEventListener(
-      "pointercancel",
-      finishDrag
-    );
-
-    root.addEventListener(
-      "lostpointercapture",
-      event => {
-        if (
-          dragging &&
-          event.pointerId === pointerId
-        ) {
-          dragging = false;
-          pointerId = null;
-          lockedDirection = 0;
-
-          render(
-            open >= 0.48 ? 1 : 0,
-            true
-          );
-        }
-      }
-    );
-
-    root.addEventListener(
-      "click",
-      () => {
-        if (suppressClick) {
-          suppressClick = false;
-          return;
-        }
-
-        userInteracted = true;
-
+    
+        dragging = false;
+        suppressClick = moved;
+        moved = false;
+    
+        try {
+          root.releasePointerCapture(pointerId);
+        } catch {}
+    
+        pointerId = null;
+        lockedDirection = 0;
+    
         render(
-          startOpen >= 0.5 ? 0 : 1,
+          open >= 0.48 ? 1 : 0,
           true
         );
       }
-    );
-
-    root.addEventListener(
-      "keydown",
-      event => {
-        let next = open;
-
-        if (
-          event.key === "ArrowRight" ||
-          event.key === "ArrowUp"
-        ) {
-          next += event.shiftKey
-            ? 0.2
-            : 0.08;
-        } else if (
-          event.key === "ArrowLeft" ||
-          event.key === "ArrowDown"
-        ) {
-          next -= event.shiftKey
-            ? 0.2
-            : 0.08;
-        } else if (event.key === "Home") {
-          next = 0;
-        } else if (event.key === "End") {
-          next = 1;
-        } else if (
-          event.key === "Enter" ||
-          event.key === " "
-        ) {
-          next = open >= 0.5 ? 0 : 1;
-        } else {
-          return;
-        }
-
-        event.preventDefault();
-        userInteracted = true;
-
-        render(next, true);
-      }
-    );
-
-    if (
-      !matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches
-    ) {
-      setTimeout(() => {
-        if (userInteracted) return;
-
-        render(1, true);
-
-        setTimeout(() => {
-          if (!userInteracted) {
-            render(0.04, true);
+    
+      root.addEventListener(
+        "pointerup",
+        finishDrag
+      );
+    
+      root.addEventListener(
+        "pointercancel",
+        finishDrag
+      );
+    
+      root.addEventListener(
+        "lostpointercapture",
+        event => {
+          if (
+            dragging &&
+            event.pointerId === pointerId
+          ) {
+            dragging = false;
+            pointerId = null;
+            lockedDirection = 0;
+    
+            render(
+              open >= 0.48 ? 1 : 0,
+              true
+            );
           }
-        }, 1400);
-      }, 650);
-    }
-
-    render(open, true);
-  </script>
+        }
+      );
+    
+      root.addEventListener(
+        "click",
+        () => {
+          if (suppressClick) {
+            suppressClick = false;
+            return;
+          }
+    
+          userInteracted = true;
+    
+          render(
+            startOpen >= 0.5 ? 0 : 1,
+            true
+          );
+        }
+      );
+    
+      root.addEventListener(
+        "keydown",
+        event => {
+          let next = open;
+    
+          if (
+            event.key === "ArrowRight" ||
+            event.key === "ArrowUp"
+          ) {
+            next += event.shiftKey
+              ? 0.2
+              : 0.08;
+          } else if (
+            event.key === "ArrowLeft" ||
+            event.key === "ArrowDown"
+          ) {
+            next -= event.shiftKey
+              ? 0.2
+              : 0.08;
+          } else if (event.key === "Home") {
+            next = 0;
+          } else if (event.key === "End") {
+            next = 1;
+          } else if (
+            event.key === "Enter" ||
+            event.key === " "
+          ) {
+            next = open >= 0.5 ? 0 : 1;
+          } else {
+            return;
+          }
+    
+          event.preventDefault();
+          userInteracted = true;
+    
+          render(next, true);
+        }
+      );
+    
+      if (
+        !matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches
+      ) {
+        setTimeout(() => {
+          if (userInteracted) return;
+    
+          render(1, true);
+    
+          setTimeout(() => {
+            if (!userInteracted) {
+              render(0, true);
+            }
+          }, 1600);
+        }, 650);
+      }
+    
+      render(open, true, true);
+    </script>
 </body>
 </html>
