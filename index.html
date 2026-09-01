@@ -6,8 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
-
-  <title>SOOP Scroll Widget</title>
+  <title>Japanese Sliding Door</title>
 
   <style>
     * {
@@ -33,262 +32,263 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .scroll {
-      --progress: 0.08;
-      --crop: 45.08%;
-      --left-shift: -8%;
-      --right-shift: 8%;
-      --left-position: 46%;
-      --right-position: 54%;
+    .scene {
+      --open: 0.04;
 
       position: relative;
       width: min(94vw, 860px);
       max-height: 90vh;
       aspect-ratio: 16 / 9;
       overflow: hidden;
-
-      border-radius: 14px;
+      border: 12px solid #402713;
+      border-radius: 8px;
       outline: none;
-      background: #f5c2c2;
-
+      background: #171b22;
       box-shadow:
-        0 20px 50px rgb(40 20 15 / 25%);
-
+        0 24px 55px rgb(23 13 7 / 38%),
+        inset 0 0 0 2px #8a5b31;
       cursor: ew-resize;
       touch-action: none;
     }
 
-    .content,
-    .paper {
+    .interior {
       position: absolute;
       inset: 0;
-    }
-
-    /*
-      나중에 이 부분을 실제 이미지로 교체합니다.
-      지금은 그라데이션 테스트 화면입니다.
-    */
-    .content {
       display: grid;
       place-items: center;
       overflow: hidden;
-
-      clip-path:
-        inset(0 var(--crop) 0 var(--crop));
-
-      background:
-        radial-gradient(
-          circle at 50% 32%,
-          rgb(255 255 255 / 80%) 0 7%,
-          transparent 8%
-        ),
-        linear-gradient(
-          135deg,
-          #8fd3f4,
-          #c2e9fb 45%,
-          #fbc2eb
-        );
-
-      color: #492c42;
-      font:
-        700 clamp(22px, 5vw, 56px) / 1
-        system-ui,
-        sans-serif;
-
-      transition:
-        clip-path 0.45s
-        cubic-bezier(.2, .8, .2, 1);
-    }
-
-    .paper {
-      pointer-events: none;
-
-      background-color: #f5c2c2;
-      background-image:
-        linear-gradient(
-          90deg,
-          rgb(98 65 36 / 8%) 1px,
-          transparent 1px
-        ),
-        radial-gradient(
-          circle at 30% 30%,
-          rgb(255 255 255 / 28%),
-          transparent 46%
-        );
-
-      background-size:
-        13px 100%,
-        100% 100%;
-
-      transition:
-        transform 0.45s
-        cubic-bezier(.2, .8, .2, 1);
-    }
-
-    .paper.left {
-      right: 50%;
-
-      transform:
-        translateX(var(--left-shift));
-
-      box-shadow:
-        inset -12px 0 22px
-        rgb(78 52 31 / 12%);
-    }
-
-    .paper.right {
-      left: 50%;
-
-      transform:
-        translateX(var(--right-shift));
-
-      box-shadow:
-        inset 12px 0 22px
-        rgb(78 52 31 / 12%);
-    }
-
-    .roller {
-      position: absolute;
-      top: -2%;
-      bottom: -2%;
-      z-index: 5;
-
-      width: 22px;
-      border-radius: 999px;
-      pointer-events: none;
-
       background:
         linear-gradient(
           90deg,
-          #6d4227,
-          #c69157 30%,
-          #7b4b2d 67%,
-          #4b2b1b
+          transparent 49.5%,
+          rgb(255 220 155 / 12%) 50%,
+          transparent 50.5%
+        ),
+        linear-gradient(
+          to bottom,
+          #18212b 0 57%,
+          #5b4732 57% 60%,
+          #b19a6a 60% 100%
         );
-
-      box-shadow:
-        0 5px 12px rgb(28 16 9 / 35%);
-
-      transition:
-        left 0.45s
-        cubic-bezier(.2, .8, .2, 1);
     }
 
-    .roller::before,
-    .roller::after {
+    .interior::before {
       content: "";
-
       position: absolute;
-      left: -5px;
-
-      width: 32px;
-      height: 10px;
-      border-radius: 999px;
-
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 40%;
       background:
-        linear-gradient(
-          #d1a06a,
-          #604027
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 120px,
+          rgb(65 48 29 / 34%) 120px 124px
+        ),
+        repeating-linear-gradient(
+          7deg,
+          rgb(255 255 255 / 3%) 0 2px,
+          transparent 2px 8px
         );
     }
 
-    .roller::before {
+    .lamp-line {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 3px;
+      height: 27%;
+      transform: translateX(-50%);
+      background: #1c1712;
+    }
+
+    .lamp {
+      position: absolute;
+      left: 50%;
+      top: 25%;
+      width: clamp(54px, 10vw, 92px);
+      aspect-ratio: 1;
+      transform: translateX(-50%);
+      border: 7px solid #4d2c17;
+      border-radius: 50%;
+      background:
+        radial-gradient(
+          circle,
+          #fff8d6 0 28%,
+          #f2bb64 55%,
+          #b7652d 100%
+        );
+      box-shadow:
+        0 0 45px rgb(255 190 92 / 48%);
+    }
+
+    .door {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 4;
+      width: 50%;
+      overflow: hidden;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgb(45 20 8 / 17%) 0 1px,
+          transparent 1px 8px
+        ),
+        linear-gradient(
+          90deg,
+          #6d3d1e,
+          #a66e3b 44%,
+          #744321
+        );
+      box-shadow:
+        inset 0 0 22px rgb(34 15 5 / 38%);
+      transition:
+        transform 0.52s
+        cubic-bezier(.2, .8, .2, 1);
+      will-change: transform;
+    }
+
+    .door::before {
+      content: "";
+      position: absolute;
+      inset: 18px;
+      border: 8px solid #593117;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 calc(25% - 6px),
+          #61391e calc(25% - 6px) 25%
+        ),
+        repeating-linear-gradient(
+          0deg,
+          transparent 0 62px,
+          #61391e 62px 69px
+        ),
+        linear-gradient(
+          90deg,
+          rgb(239 219 176 / 94%),
+          rgb(205 174 122 / 92%)
+        );
+      box-shadow:
+        inset 0 0 20px rgb(75 44 20 / 28%);
+    }
+
+    .door.left {
+      left: 0;
+      border-right: 7px solid #38200f;
+      transform:
+        translateX(calc(var(--open) * -100%));
+    }
+
+    .door.right {
+      right: 0;
+      border-left: 7px solid #38200f;
+      transform:
+        translateX(calc(var(--open) * 100%));
+    }
+
+    .handle {
+      position: absolute;
+      top: 50%;
+      z-index: 6;
+      width: 16px;
+      height: 54px;
+      transform: translateY(-50%);
+      border: 2px solid #24150d;
+      border-radius: 4px;
+      pointer-events: none;
+      background:
+        linear-gradient(
+          90deg,
+          #21140d,
+          #775337 45%,
+          #28180f
+        );
+      box-shadow:
+        0 3px 7px rgb(20 10 5 / 45%);
+    }
+
+    .door.left .handle {
+      right: 20px;
+    }
+
+    .door.right .handle {
+      left: 20px;
+    }
+
+    .beam {
+      position: absolute;
+      left: 0;
+      right: 0;
+      z-index: 7;
+      height: 14px;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgb(255 255 255 / 5%) 0 2px,
+          transparent 2px 10px
+        ),
+        linear-gradient(
+          #704524,
+          #341d0e
+        );
+      box-shadow:
+        0 2px 5px rgb(20 10 4 / 40%);
+    }
+
+    .beam.top {
       top: 0;
     }
 
-    .roller::after {
+    .beam.bottom {
       bottom: 0;
-    }
-
-    .roller.left {
-      left: var(--left-position);
-      transform: translateX(-50%);
-    }
-
-    .roller.right {
-      left: var(--right-position);
-      transform: translateX(-50%);
-    }
-
-    .seal {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      z-index: 6;
-
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-
-      pointer-events: none;
-
-      transform:
-        translate(-50%, -50%)
-        scale(calc(1 - var(--progress) * 0.45));
-
-      opacity:
-        calc(1 - var(--progress) * 0.72);
-
-      background: #a43c31;
-
-      box-shadow:
-        0 3px 8px rgb(55 19 14 / 35%),
-        inset 0 0 0 4px
-        rgb(255 219 177 / 20%);
-
-      transition:
-        transform 0.45s ease,
-        opacity 0.45s ease;
+      transform: rotate(180deg);
     }
 
     .hint {
       position: absolute;
       left: 50%;
-      bottom: 16px;
-      z-index: 8;
-
+      bottom: 25px;
+      z-index: 10;
       transform: translateX(-50%);
-
-      padding: 8px 12px;
-      border-radius: 999px;
-
-      color: white;
-      background: rgb(24 18 13 / 60%);
-
+      padding: 10px 16px;
+      border: 2px solid #b7834c;
+      border-radius: 5px;
+      color: #f8ead1;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgb(255 255 255 / 4%) 0 1px,
+          transparent 1px 7px
+        ),
+        #402713;
+      box-shadow:
+        0 5px 13px rgb(20 10 5 / 38%);
       font:
-        600 13px / 1
+        700 clamp(12px, 2.2vw, 15px) / 1
         system-ui,
         sans-serif;
-
       white-space: nowrap;
       pointer-events: none;
-
-      opacity:
-        calc(1 - var(--progress));
-
-      transition:
-        opacity 0.45s ease;
+      opacity: calc(1 - var(--open));
+      transition: opacity 0.4s ease;
     }
 
-    .scroll.dragging .content,
-    .scroll.dragging .paper,
-    .scroll.dragging .roller,
-    .scroll.dragging .seal,
-    .scroll.dragging .hint {
+    .scene.dragging .door,
+    .scene.dragging .hint {
       transition: none;
     }
 
-    .scroll:focus-visible {
+    .scene:focus-visible {
       box-shadow:
-        0 0 0 4px rgb(177 116 62 / 58%),
-        0 20px 50px rgb(40 20 15 / 25%);
+        0 0 0 4px rgb(188 124 58 / 65%),
+        0 24px 55px rgb(23 13 7 / 38%);
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .content,
-      .paper,
-      .roller,
-      .seal,
+      .door,
       .hint {
         transition: none !important;
       }
@@ -298,54 +298,55 @@
 
 <body>
   <div
-    id="scroll"
-    class="scroll"
+    id="scene"
+    class="scene"
     role="slider"
     tabindex="0"
-    aria-label="두루마리 펼치기"
+    aria-label="미닫이문 열기"
     aria-valuemin="0"
     aria-valuemax="100"
-    aria-valuenow="8"
+    aria-valuenow="4"
   >
-    <div class="content">
-      테스트 성공!
+    <div class="interior">
+      <div class="lamp-line"></div>
+      <div class="lamp"></div>
     </div>
 
-    <div class="paper left"></div>
-    <div class="paper right"></div>
+    <div class="door left">
+      <span class="handle"></span>
+    </div>
 
-    <div class="roller left"></div>
-    <div class="roller right"></div>
+    <div class="door right">
+      <span class="handle"></span>
+    </div>
 
-    <div class="seal"></div>
+    <div class="beam top"></div>
+    <div class="beam bottom"></div>
 
     <div class="hint">
-      가운데를 잡고 좌우로 펼쳐 보세요
+      누구냐? 문 닫아라.
     </div>
   </div>
 
   <script>
-    const root =
-      document.querySelector("#scroll");
+    const root = document.querySelector("#scene");
 
-    let progress = 0.08;
+    let open = 0.04;
     let dragging = false;
     let moved = false;
     let suppressClick = false;
     let pointerId = null;
     let startX = 0;
-    let progressBeforeClick = progress;
+    let startOpen = open;
+    let lockedDirection = 0;
     let userInteracted = false;
 
     function clamp(value) {
-      return Math.max(
-        0,
-        Math.min(1, value)
-      );
+      return Math.max(0, Math.min(1, value));
     }
 
     function render(value, animate = false) {
-      progress = clamp(value);
+      open = clamp(value);
 
       root.classList.toggle(
         "dragging",
@@ -353,53 +354,13 @@
       );
 
       root.style.setProperty(
-        "--progress",
-        progress
-      );
-
-      root.style.setProperty(
-        "--crop",
-        `${((1 - progress) * 49).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--left-shift",
-        `${(-progress * 100).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--right-shift",
-        `${(progress * 100).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--left-position",
-        `${(50 - progress * 50).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--right-position",
-        `${(50 + progress * 50).toFixed(3)}%`
+        "--open",
+        open
       );
 
       root.setAttribute(
         "aria-valuenow",
-        String(Math.round(progress * 100))
-      );
-    }
-
-    function progressFromPointer(event) {
-      const rect =
-        root.getBoundingClientRect();
-
-      const center =
-        rect.left + rect.width / 2;
-
-      const distance =
-        Math.abs(event.clientX - center);
-
-      return clamp(
-        distance / (rect.width / 2)
+        String(Math.round(open * 100))
       );
     }
 
@@ -420,21 +381,16 @@
         dragging = true;
         moved = false;
         suppressClick = false;
-
         pointerId = event.pointerId;
         startX = event.clientX;
-        progressBeforeClick = progress;
+        startOpen = open;
+        lockedDirection = 0;
 
-        render(
-          progressFromPointer(event),
-          false
-        );
+        root.classList.add("dragging");
 
         try {
           root.setPointerCapture(pointerId);
-        } catch {
-          // 포인터 캡처를 지원하지 않아도 동작합니다.
-        }
+        } catch {}
       }
     );
 
@@ -448,16 +404,47 @@
           return;
         }
 
-        if (
-          Math.abs(event.clientX - startX) > 4
-        ) {
+        const deltaX =
+          event.clientX - startX;
+
+        const distance =
+          Math.abs(deltaX);
+
+        if (distance > 4) {
           moved = true;
         }
 
-        render(
-          progressFromPointer(event),
-          false
-        );
+        if (
+          lockedDirection === 0 &&
+          distance >= 8
+        ) {
+          lockedDirection =
+            deltaX > 0 ? 1 : -1;
+        }
+
+        if (lockedDirection === 0) {
+          return;
+        }
+
+        const rect =
+          root.getBoundingClientRect();
+
+        const directedDistance =
+          Math.max(
+            0,
+            deltaX * lockedDirection
+          );
+
+        const change =
+          directedDistance /
+          (rect.width * 0.45);
+
+        const next =
+          startOpen >= 0.5
+            ? startOpen - change
+            : startOpen + change;
+
+        render(next, false);
       }
     );
 
@@ -475,14 +462,13 @@
 
       try {
         root.releasePointerCapture(pointerId);
-      } catch {
-        // 이미 해제된 경우 무시합니다.
-      }
+      } catch {}
 
       pointerId = null;
+      lockedDirection = 0;
 
       render(
-        progress > 0.48 ? 1 : 0,
+        open >= 0.48 ? 1 : 0,
         true
       );
     }
@@ -498,6 +484,25 @@
     );
 
     root.addEventListener(
+      "lostpointercapture",
+      event => {
+        if (
+          dragging &&
+          event.pointerId === pointerId
+        ) {
+          dragging = false;
+          pointerId = null;
+          lockedDirection = 0;
+
+          render(
+            open >= 0.48 ? 1 : 0,
+            true
+          );
+        }
+      }
+    );
+
+    root.addEventListener(
       "click",
       () => {
         if (suppressClick) {
@@ -508,7 +513,7 @@
         userInteracted = true;
 
         render(
-          progressBeforeClick > 0.5 ? 0 : 1,
+          startOpen >= 0.5 ? 0 : 1,
           true
         );
       }
@@ -517,18 +522,22 @@
     root.addEventListener(
       "keydown",
       event => {
-        let next = progress;
+        let next = open;
 
         if (
           event.key === "ArrowRight" ||
           event.key === "ArrowUp"
         ) {
-          next += event.shiftKey ? 0.2 : 0.08;
+          next += event.shiftKey
+            ? 0.2
+            : 0.08;
         } else if (
           event.key === "ArrowLeft" ||
           event.key === "ArrowDown"
         ) {
-          next -= event.shiftKey ? 0.2 : 0.08;
+          next -= event.shiftKey
+            ? 0.2
+            : 0.08;
         } else if (event.key === "Home") {
           next = 0;
         } else if (event.key === "End") {
@@ -537,7 +546,7 @@
           event.key === "Enter" ||
           event.key === " "
         ) {
-          next = progress > 0.5 ? 0 : 1;
+          next = open >= 0.5 ? 0 : 1;
         } else {
           return;
         }
@@ -549,10 +558,6 @@
       }
     );
 
-    /*
-      페이지가 열리면 한 번 펼쳤다가 닫아서
-      드래그 가능한 요소임을 보여줍니다.
-    */
     if (
       !matchMedia(
         "(prefers-reduced-motion: reduce)"
@@ -565,13 +570,13 @@
 
         setTimeout(() => {
           if (!userInteracted) {
-            render(0.08, true);
+            render(0.04, true);
           }
-        }, 1500);
+        }, 1400);
       }, 650);
     }
 
-    render(progress, true);
+    render(open, true);
   </script>
 </body>
 </html>
