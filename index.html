@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>SOOP Scroll Widget</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .scroll {
+      --progress: 0.08;
+      --crop: 45.08%;
+      --left-shift: -8%;
+      --right-shift: 8%;
+      --left-position: 46%;
+      --right-position: 54%;
+
+      position: relative;
+      width: min(94vw, 860px);
+      max-height: 90vh;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+
+      border-radius: 14px;
+      outline: none;
+      background: #f5c2c2;
+
+      box-shadow:
+        0 20px 50px rgb(40 20 15 / 25%);
+
+      cursor: ew-resize;
+      touch-action: none;
+    }
+
+    .content,
+    .paper {
+      position: absolute;
+      inset: 0;
+    }
+
+    /*
+      나중에 이 부분을 실제 이미지로 교체합니다.
+      지금은 그라데이션 테스트 화면입니다.
+    */
+    .content {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+
+      clip-path:
+        inset(0 var(--crop) 0 var(--crop));
+
+      background:
+        radial-gradient(
+          circle at 50% 32%,
+          rgb(255 255 255 / 80%) 0 7%,
+          transparent 8%
+        ),
+        linear-gradient(
+          135deg,
+          #8fd3f4,
+          #c2e9fb 45%,
+          #fbc2eb
+        );
+
+      color: #492c42;
+      font:
+        700 clamp(22px, 5vw, 56px) / 1
+        system-ui,
+        sans-serif;
+
+      transition:
+        clip-path 0.45s
+        cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .paper {
+      pointer-events: none;
+
+      background-color: #f5c2c2;
+      background-image:
+        linear-gradient(
+          90deg,
+          rgb(98 65 36 / 8%) 1px,
+          transparent 1px
+        ),
+        radial-gradient(
+          circle at 30% 30%,
+          rgb(255 255 255 / 28%),
+          transparent 46%
+        );
+
+      background-size:
+        13px 100%,
+        100% 100%;
+
+      transition:
+        transform 0.45s
+        cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .paper.left {
+      right: 50%;
+
+      transform:
+        translateX(var(--left-shift));
+
+      box-shadow:
+        inset -12px 0 22px
+        rgb(78 52 31 / 12%);
+    }
+
+    .paper.right {
+      left: 50%;
+
+      transform:
+        translateX(var(--right-shift));
+
+      box-shadow:
+        inset 12px 0 22px
+        rgb(78 52 31 / 12%);
+    }
+
+    .roller {
+      position: absolute;
+      top: -2%;
+      bottom: -2%;
+      z-index: 5;
+
+      width: 22px;
+      border-radius: 999px;
+      pointer-events: none;
+
+      background:
+        linear-gradient(
+          90deg,
+          #6d4227,
+          #c69157 30%,
+          #7b4b2d 67%,
+          #4b2b1b
+        );
+
+      box-shadow:
+        0 5px 12px rgb(28 16 9 / 35%);
+
+      transition:
+        left 0.45s
+        cubic-bezier(.2, .8, .2, 1);
+    }
+
+    .roller::before,
+    .roller::after {
+      content: "";
+
+      position: absolute;
+      left: -5px;
+
+      width: 32px;
+      height: 10px;
+      border-radius: 999px;
+
+      background:
+        linear-gradient(
+          #d1a06a,
+          #604027
+        );
+    }
+
+    .roller::before {
+      top: 0;
+    }
+
+    .roller::after {
+      bottom: 0;
+    }
+
+    .roller.left {
+      left: var(--left-position);
+      transform: translateX(-50%);
+    }
+
+    .roller.right {
+      left: var(--right-position);
+      transform: translateX(-50%);
+    }
+
+    .seal {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 6;
+
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+
+      pointer-events: none;
+
+      transform:
+        translate(-50%, -50%)
+        scale(calc(1 - var(--progress) * 0.45));
+
+      opacity:
+        calc(1 - var(--progress) * 0.72);
+
+      background: #a43c31;
+
+      box-shadow:
+        0 3px 8px rgb(55 19 14 / 35%),
+        inset 0 0 0 4px
+        rgb(255 219 177 / 20%);
+
+      transition:
+        transform 0.45s ease,
+        opacity 0.45s ease;
+    }
+
+    .hint {
+      position: absolute;
+      left: 50%;
+      bottom: 16px;
+      z-index: 8;
+
+      transform: translateX(-50%);
+
+      padding: 8px 12px;
+      border-radius: 999px;
+
+      color: white;
+      background: rgb(24 18 13 / 60%);
+
+      font:
+        600 13px / 1
+        system-ui,
+        sans-serif;
+
+      white-space: nowrap;
+      pointer-events: none;
+
+      opacity:
+        calc(1 - var(--progress));
+
+      transition:
+        opacity 0.45s ease;
+    }
+
+    .scroll.dragging .content,
+    .scroll.dragging .paper,
+    .scroll.dragging .roller,
+    .scroll.dragging .seal,
+    .scroll.dragging .hint {
+      transition: none;
+    }
+
+    .scroll:focus-visible {
+      box-shadow:
+        0 0 0 4px rgb(177 116 62 / 58%),
+        0 20px 50px rgb(40 20 15 / 25%);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .content,
+      .paper,
+      .roller,
+      .seal,
+      .hint {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div
+    id="scroll"
+    class="scroll"
+    role="slider"
+    tabindex="0"
+    aria-label="두루마리 펼치기"
+    aria-valuemin="0"
+    aria-valuemax="100"
+    aria-valuenow="8"
+  >
+    <div class="content">
+      테스트 성공!
+    </div>
+
+    <div class="paper left"></div>
+    <div class="paper right"></div>
+
+    <div class="roller left"></div>
+    <div class="roller right"></div>
+
+    <div class="seal"></div>
+
+    <div class="hint">
+      가운데를 잡고 좌우로 펼쳐 보세요
+    </div>
+  </div>
+
+  <script>
+    const root =
+      document.querySelector("#scroll");
+
+    let progress = 0.08;
+    let dragging = false;
+    let moved = false;
+    let suppressClick = false;
+    let pointerId = null;
+    let startX = 0;
+    let progressBeforeClick = progress;
+    let userInteracted = false;
+
+    function clamp(value) {
+      return Math.max(
+        0,
+        Math.min(1, value)
+      );
+    }
+
+    function render(value, animate = false) {
+      progress = clamp(value);
+
+      root.classList.toggle(
+        "dragging",
+        !animate
+      );
+
+      root.style.setProperty(
+        "--progress",
+        progress
+      );
+
+      root.style.setProperty(
+        "--crop",
+        `${((1 - progress) * 49).toFixed(3)}%`
+      );
+
+      root.style.setProperty(
+        "--left-shift",
+        `${(-progress * 100).toFixed(3)}%`
+      );
+
+      root.style.setProperty(
+        "--right-shift",
+        `${(progress * 100).toFixed(3)}%`
+      );
+
+      root.style.setProperty(
+        "--left-position",
+        `${(50 - progress * 50).toFixed(3)}%`
+      );
+
+      root.style.setProperty(
+        "--right-position",
+        `${(50 + progress * 50).toFixed(3)}%`
+      );
+
+      root.setAttribute(
+        "aria-valuenow",
+        String(Math.round(progress * 100))
+      );
+    }
+
+    function progressFromPointer(event) {
+      const rect =
+        root.getBoundingClientRect();
+
+      const center =
+        rect.left + rect.width / 2;
+
+      const distance =
+        Math.abs(event.clientX - center);
+
+      return clamp(
+        distance / (rect.width / 2)
+      );
+    }
+
+    root.addEventListener(
+      "pointerdown",
+      event => {
+        if (
+          event.button !== 0 ||
+          event.isPrimary === false ||
+          dragging
+        ) {
+          return;
+        }
+
+        event.preventDefault();
+
+        userInteracted = true;
+        dragging = true;
+        moved = false;
+        suppressClick = false;
+
+        pointerId = event.pointerId;
+        startX = event.clientX;
+        progressBeforeClick = progress;
+
+        render(
+          progressFromPointer(event),
+          false
+        );
+
+        try {
+          root.setPointerCapture(pointerId);
+        } catch {
+          // 포인터 캡처를 지원하지 않아도 동작합니다.
+        }
+      }
+    );
+
+    root.addEventListener(
+      "pointermove",
+      event => {
+        if (
+          !dragging ||
+          event.pointerId !== pointerId
+        ) {
+          return;
+        }
+
+        if (
+          Math.abs(event.clientX - startX) > 4
+        ) {
+          moved = true;
+        }
+
+        render(
+          progressFromPointer(event),
+          false
+        );
+      }
+    );
+
+    function finishDrag(event) {
+      if (
+        !dragging ||
+        event.pointerId !== pointerId
+      ) {
+        return;
+      }
+
+      dragging = false;
+      suppressClick = moved;
+      moved = false;
+
+      try {
+        root.releasePointerCapture(pointerId);
+      } catch {
+        // 이미 해제된 경우 무시합니다.
+      }
+
+      pointerId = null;
+
+      render(
+        progress > 0.48 ? 1 : 0,
+        true
+      );
+    }
+
+    root.addEventListener(
+      "pointerup",
+      finishDrag
+    );
+
+    root.addEventListener(
+      "pointercancel",
+      finishDrag
+    );
+
+    root.addEventListener(
+      "click",
+      () => {
+        if (suppressClick) {
+          suppressClick = false;
+          return;
+        }
+
+        userInteracted = true;
+
+        render(
+          progressBeforeClick > 0.5 ? 0 : 1,
+          true
+        );
+      }
+    );
+
+    root.addEventListener(
+      "keydown",
+      event => {
+        let next = progress;
+
+        if (
+          event.key === "ArrowRight" ||
+          event.key === "ArrowUp"
+        ) {
+          next += event.shiftKey ? 0.2 : 0.08;
+        } else if (
+          event.key === "ArrowLeft" ||
+          event.key === "ArrowDown"
+        ) {
+          next -= event.shiftKey ? 0.2 : 0.08;
+        } else if (event.key === "Home") {
+          next = 0;
+        } else if (event.key === "End") {
+          next = 1;
+        } else if (
+          event.key === "Enter" ||
+          event.key === " "
+        ) {
+          next = progress > 0.5 ? 0 : 1;
+        } else {
+          return;
+        }
+
+        event.preventDefault();
+        userInteracted = true;
+
+        render(next, true);
+      }
+    );
+
+    /*
+      페이지가 열리면 한 번 펼쳤다가 닫아서
+      드래그 가능한 요소임을 보여줍니다.
+    */
+    if (
+      !matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches
+    ) {
+      setTimeout(() => {
+        if (userInteracted) return;
+
+        render(1, true);
+
+        setTimeout(() => {
+          if (!userInteracted) {
+            render(0.08, true);
+          }
+        }, 1500);
+      }, 650);
+    }
+
+    render(progress, true);
+  </script>
+</body>
+</html>
