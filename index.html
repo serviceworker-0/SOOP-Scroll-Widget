@@ -6,7 +6,7 @@
     name="viewport"
     content="width=device-width, initial-scale=1"
   >
-  <title>Japanese Sliding Door</title>
+  <title>Pastel Sliding Door</title>
 
   <style>
     * {
@@ -33,118 +33,52 @@
     }
 
     .scene {
-      --open: 0.04;
+      --left-shift: -4%;
+      --right-shift: 4%;
+      --hint-opacity: 0.96;
 
       position: relative;
       width: min(94vw, 860px);
       max-height: 90vh;
       aspect-ratio: 16 / 9;
       overflow: hidden;
-      border: 12px solid #402713;
-      border-radius: 8px;
+      border: 10px solid #9c7464;
+      border-radius: 12px;
       outline: none;
-      background: #171b22;
+      background: #f5dfe4;
       box-shadow:
-        0 24px 55px rgb(23 13 7 / 38%),
-        inset 0 0 0 2px #8a5b31;
+        0 22px 50px rgb(75 48 41 / 25%);
       cursor: ew-resize;
       touch-action: none;
     }
 
-    .interior {
+    .content {
       position: absolute;
       inset: 0;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      background:
-        linear-gradient(
-          90deg,
-          transparent 49.5%,
-          rgb(255 220 155 / 12%) 50%,
-          transparent 50.5%
-        ),
-        linear-gradient(
-          to bottom,
-          #18212b 0 57%,
-          #5b4732 57% 60%,
-          #b19a6a 60% 100%
-        );
+      background: #f5dfe4;
     }
 
-    .interior::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 40%;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          transparent 0 120px,
-          rgb(65 48 29 / 34%) 120px 124px
-        ),
-        repeating-linear-gradient(
-          7deg,
-          rgb(255 255 255 / 3%) 0 2px,
-          transparent 2px 8px
-        );
-    }
-
-    .lamp-line {
-      position: absolute;
-      left: 50%;
-      top: 0;
-      width: 3px;
-      height: 27%;
-      transform: translateX(-50%);
-      background: #1c1712;
-    }
-
-    .lamp {
-      position: absolute;
-      left: 50%;
-      top: 25%;
-      width: clamp(54px, 10vw, 92px);
-      aspect-ratio: 1;
-      transform: translateX(-50%);
-      border: 7px solid #4d2c17;
-      border-radius: 50%;
-      background:
-        radial-gradient(
-          circle,
-          #fff8d6 0 28%,
-          #f2bb64 55%,
-          #b7652d 100%
-        );
-      box-shadow:
-        0 0 45px rgb(255 190 92 / 48%);
+    .content img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+      -webkit-user-drag: none;
     }
 
     .door {
       position: absolute;
       top: 0;
       bottom: 0;
-      z-index: 4;
+      z-index: 3;
       width: 50%;
       overflow: hidden;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          rgb(45 20 8 / 17%) 0 1px,
-          transparent 1px 8px
-        ),
-        linear-gradient(
-          90deg,
-          #6d3d1e,
-          #a66e3b 44%,
-          #744321
-        );
+      background: #d9ad9f;
       box-shadow:
-        inset 0 0 22px rgb(34 15 5 / 38%);
+        inset 0 0 14px rgb(105 69 57 / 15%);
       transition:
-        transform 0.52s
+        transform 0.5s
         cubic-bezier(.2, .8, .2, 1);
       will-change: transform;
     }
@@ -152,128 +86,82 @@
     .door::before {
       content: "";
       position: absolute;
-      inset: 18px;
-      border: 8px solid #593117;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          transparent 0 calc(25% - 6px),
-          #61391e calc(25% - 6px) 25%
-        ),
-        repeating-linear-gradient(
-          0deg,
-          transparent 0 62px,
-          #61391e 62px 69px
-        ),
+      inset: 14px;
+      border: 7px solid #b98d7b;
+      background-color: #f7ebe5;
+      background-image:
         linear-gradient(
           90deg,
-          rgb(239 219 176 / 94%),
-          rgb(205 174 122 / 92%)
+          transparent calc(100% - 4px),
+          #c9a393 calc(100% - 4px)
+        ),
+        linear-gradient(
+          0deg,
+          transparent calc(100% - 4px),
+          #c9a393 calc(100% - 4px)
         );
+      background-size:
+        33.333% 100%,
+        100% 33.333%;
       box-shadow:
-        inset 0 0 20px rgb(75 44 20 / 28%);
+        inset 0 0 12px rgb(128 91 73 / 9%);
     }
 
     .door.left {
       left: 0;
-      border-right: 7px solid #38200f;
+      border-right: 5px solid #8f6959;
       transform:
-        translateX(calc(var(--open) * -100%));
+        translateX(var(--left-shift));
     }
 
     .door.right {
       right: 0;
-      border-left: 7px solid #38200f;
+      border-left: 5px solid #8f6959;
       transform:
-        translateX(calc(var(--open) * 100%));
+        translateX(var(--right-shift));
     }
 
     .handle {
       position: absolute;
       top: 50%;
-      z-index: 6;
-      width: 16px;
-      height: 54px;
+      z-index: 5;
+      width: 13px;
+      height: 46px;
       transform: translateY(-50%);
-      border: 2px solid #24150d;
-      border-radius: 4px;
+      border-radius: 999px;
       pointer-events: none;
-      background:
-        linear-gradient(
-          90deg,
-          #21140d,
-          #775337 45%,
-          #28180f
-        );
+      background: #876255;
       box-shadow:
-        0 3px 7px rgb(20 10 5 / 45%);
+        inset 2px 0 3px rgb(255 255 255 / 22%),
+        0 2px 5px rgb(80 50 40 / 25%);
     }
 
     .door.left .handle {
-      right: 20px;
+      right: 18px;
     }
 
     .door.right .handle {
-      left: 20px;
-    }
-
-    .beam {
-      position: absolute;
-      left: 0;
-      right: 0;
-      z-index: 7;
-      height: 14px;
-      pointer-events: none;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          rgb(255 255 255 / 5%) 0 2px,
-          transparent 2px 10px
-        ),
-        linear-gradient(
-          #704524,
-          #341d0e
-        );
-      box-shadow:
-        0 2px 5px rgb(20 10 4 / 40%);
-    }
-
-    .beam.top {
-      top: 0;
-    }
-
-    .beam.bottom {
-      bottom: 0;
-      transform: rotate(180deg);
+      left: 18px;
     }
 
     .hint {
       position: absolute;
       left: 50%;
-      bottom: 25px;
-      z-index: 10;
+      bottom: 14px;
+      z-index: 8;
       transform: translateX(-50%);
-      padding: 10px 16px;
-      border: 2px solid #b7834c;
-      border-radius: 5px;
-      color: #f8ead1;
-      background:
-        repeating-linear-gradient(
-          90deg,
-          rgb(255 255 255 / 4%) 0 1px,
-          transparent 1px 7px
-        ),
-        #402713;
-      box-shadow:
-        0 5px 13px rgb(20 10 5 / 38%);
+      padding: 7px 11px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgb(24 18 13 / 58%);
       font:
-        700 clamp(12px, 2.2vw, 15px) / 1
+        600 12px / 1
         system-ui,
         sans-serif;
       white-space: nowrap;
       pointer-events: none;
-      opacity: calc(1 - var(--open));
-      transition: opacity 0.4s ease;
+      opacity: var(--hint-opacity);
+      transition: opacity 0.45s ease;
     }
 
     .scene.dragging .door,
@@ -283,8 +171,8 @@
 
     .scene:focus-visible {
       box-shadow:
-        0 0 0 4px rgb(188 124 58 / 65%),
-        0 24px 55px rgb(23 13 7 / 38%);
+        0 0 0 4px rgb(203 151 130 / 60%),
+        0 22px 50px rgb(75 48 41 / 25%);
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -307,10 +195,7 @@
     aria-valuemax="100"
     aria-valuenow="4"
   >
-    <div class="interior">
-      <div class="lamp-line"></div>
-      <div class="lamp"></div>
-    </div>
+    <div class="content"></div>
 
     <div class="door left">
       <span class="handle"></span>
@@ -320,16 +205,14 @@
       <span class="handle"></span>
     </div>
 
-    <div class="beam top"></div>
-    <div class="beam bottom"></div>
-
     <div class="hint">
       누구냐? 문 닫아라.
     </div>
   </div>
 
   <script>
-    const root = document.querySelector("#scene");
+    const root =
+      document.querySelector("#scene");
 
     let open = 0.04;
     let dragging = false;
@@ -342,7 +225,10 @@
     let userInteracted = false;
 
     function clamp(value) {
-      return Math.max(0, Math.min(1, value));
+      return Math.max(
+        0,
+        Math.min(1, value)
+      );
     }
 
     function render(value, animate = false) {
@@ -354,8 +240,18 @@
       );
 
       root.style.setProperty(
-        "--open",
-        open
+        "--left-shift",
+        `${(-open * 100).toFixed(3)}%`
+      );
+
+      root.style.setProperty(
+        "--right-shift",
+        `${(open * 100).toFixed(3)}%`
+      );
+
+      root.style.setProperty(
+        "--hint-opacity",
+        String(1 - open)
       );
 
       root.setAttribute(
