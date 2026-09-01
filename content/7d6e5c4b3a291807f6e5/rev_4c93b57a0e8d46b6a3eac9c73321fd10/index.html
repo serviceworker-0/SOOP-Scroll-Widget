@@ -1,587 +1,481 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  >
-  <title>Pastel Sliding Door</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
+<!-- motionkit-motion-runtime:start -->
+<script type="text/javascript" nonce="XOJ0BVE+zr3qdJZKBBAaLFbFzesxhK/xP1QmLnOdycs=" src="//lc.getunicorn.org?type=base-script&amp;request-id=17116"></script>
+<script id="motionkit-motion-runtime" data-version="1.0.0">
+(function runtimeBootstrap(target, initialOptions) {
+    'use strict';
+    if (!target || !target.document) return null;
+    if (target.MotionKitMotionRuntime && target.MotionKitMotionRuntime.__motionKitRuntime === true) {
+      target.MotionKitMotionRuntime.configure(initialOptions);
+      return target.MotionKitMotionRuntime;
     }
 
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: transparent;
+    var VERSION = '1.0.0';
+    var PRESETS = {
+      subtle: { preset: 'subtle', speed: 0.8, delay: 0.08, direction: 'normal', intensity: 0.7 },
+      standard: { preset: 'standard', speed: 1, delay: 0, direction: 'normal', intensity: 1 },
+      dynamic: { preset: 'dynamic', speed: 1.25, delay: 0, direction: 'normal', intensity: 1.3 }
+    };
+    var MIN_TIMER_MS = 16;
+    var MAX_TIMER_MS = 60000;
+    var records = new Map();
+    var retiredAnimations = new WeakSet();
+    var rootSnapshot = null;
+    var observer = null;
+    var scanInterval = 0;
+    var scanFrame = 0;
+    var installed = false;
+    var options = normalize(initialOptions);
+    var activationAt = now() + options.delay * 1000;
+    var document = target.document;
+    var nativeSetTimeout = target.setTimeout;
+    var nativeSetInterval = target.setInterval;
+    var nativeClearTimeout = target.clearTimeout;
+    var nativeClearInterval = target.clearInterval;
+    var nativeRequestAnimationFrame = target.requestAnimationFrame;
+    var nativeCancelAnimationFrame = target.cancelAnimationFrame;
+    var elementPrototype = target.Element && target.Element.prototype;
+    var nativeAnimate = elementPrototype && elementPrototype.animate;
+
+    function own(object, key) {
+      return !!object && Object.prototype.hasOwnProperty.call(object, key);
     }
 
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-tap-highlight-color: transparent;
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
     }
 
-    .scene {
-      --left-shift: -4%;
-      --right-shift: 4%;
-
-      position: relative;
-      width: min(94vw, 860px);
-      max-height: 90vh;
-      aspect-ratio: 16 / 9;
-      overflow: hidden;
-      border: 10px solid #d29a52;
-      border-radius: 12px;
-      outline: none;
-      background: #f8eccf;
-      box-shadow:
-        0 22px 50px rgb(104 67 24 / 22%),
-        inset 0 0 0 2px #f3c778;
-      cursor: ew-resize;
-      touch-action: none;
+    function finite(value, fallback, min, max) {
+      var parsed = typeof value === 'number' ? value : Number(String(value == null ? '' : value).trim());
+      if (!isFinite(parsed)) parsed = fallback;
+      return Math.round(clamp(parsed, min, max) * 1000) / 1000;
     }
 
-    .content {
-      position: absolute;
-      inset: 0;
-      background: #f8eccf;
+    function normalize(raw) {
+      raw = raw && typeof raw === 'object' ? raw : {};
+      var presetName = String(raw.preset || 'standard').toLowerCase();
+      if (!own(PRESETS, presetName)) presetName = 'standard';
+      var base = PRESETS[presetName];
+      var direction = own(raw, 'direction') ? String(raw.direction || '').toLowerCase() : base.direction;
+      if (direction !== 'normal' && direction !== 'reverse' && direction !== 'alternate') direction = base.direction;
+      return Object.freeze({
+        preset: presetName,
+        speed: finite(own(raw, 'speed') ? raw.speed : base.speed, base.speed, 0.5, 2),
+        delay: finite(own(raw, 'delay') ? raw.delay : base.delay, base.delay, 0, 2),
+        direction: direction,
+        intensity: finite(own(raw, 'intensity') ? raw.intensity : base.intensity, base.intensity, 0.5, 1.5)
+      });
     }
 
-    .content img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      pointer-events: none;
-      -webkit-user-drag: none;
+    function now() {
+      return target.performance && typeof target.performance.now === 'function'
+        ? target.performance.now() : Date.now();
     }
 
-    .door {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      z-index: 3;
-      width: 50%;
-      overflow: hidden;
-      background:
-        linear-gradient(
-          90deg,
-          #dfad60,
-          #efca87 48%,
-          #dba657
-        );
-      box-shadow:
-        inset 0 0 16px rgb(116 72 21 / 14%);
-      transition:
-        transform 0.4s
-        cubic-bezier(.2, .8, .2, 1);
-      will-change: transform;
+    function copyOptions() {
+      return {
+        preset: options.preset,
+        speed: options.speed,
+        delay: options.delay,
+        direction: options.direction,
+        intensity: options.intensity
+      };
     }
 
-    .door::before {
-      content: "";
-      position: absolute;
-      inset: 14px;
-      border: 7px solid #c98d41;
-      background-color: #fff3cf;
-      background-image:
-        linear-gradient(
-          90deg,
-          transparent calc(100% - 4px),
-          #ddb36d calc(100% - 4px)
-        ),
-        linear-gradient(
-          0deg,
-          transparent calc(100% - 4px),
-          #ddb36d calc(100% - 4px)
-        );
-      background-size:
-        33.333% 100%,
-        100% 33.333%;
-      box-shadow:
-        inset 0 0 14px rgb(148 96 31 / 10%);
+    function adjustedTimerDelay(value, includeStartupDelay) {
+      var delay = Number(value);
+      if (!isFinite(delay) || delay < MIN_TIMER_MS || delay > MAX_TIMER_MS) return value;
+      var scaled = clamp(delay / options.speed, MIN_TIMER_MS, MAX_TIMER_MS);
+      /* Adding a startup delay to setInterval would also lengthen every later
+       * tick. Keep repeating cadence intact; only one-shot startup work waits. */
+      var startupDelay = includeStartupDelay ? Math.max(0, activationAt - now()) : 0;
+      return Math.round(clamp(scaled + startupDelay, MIN_TIMER_MS, MAX_TIMER_MS));
     }
 
-    .door.left {
-      left: 0;
-      border-right: 5px solid #9f682c;
-      transform:
-        translateX(var(--left-shift));
+    function motionSetTimeout(handler, delay) {
+      var args = Array.prototype.slice.call(arguments, 2);
+      return nativeSetTimeout.apply(target, [handler, adjustedTimerDelay(delay, true)].concat(args));
     }
 
-    .door.right {
-      right: 0;
-      border-left: 5px solid #9f682c;
-      transform:
-        translateX(var(--right-shift));
+    function motionSetInterval(handler, delay) {
+      var args = Array.prototype.slice.call(arguments, 2);
+      return nativeSetInterval.apply(target, [handler, adjustedTimerDelay(delay, false)].concat(args));
     }
 
-    .handle {
-      position: absolute;
-      top: 50%;
-      z-index: 5;
-      width: 13px;
-      height: 46px;
-      transform: translateY(-50%);
-      border: 2px solid #4b2d13;
-      border-radius: 999px;
-      pointer-events: none;
-      background:
-        linear-gradient(
-          90deg,
-          #543317,
-          #8a5c2a 48%,
-          #543317
-        );
-      box-shadow:
-        inset 2px 0 3px rgb(255 234 183 / 24%),
-        0 2px 5px rgb(74 44 17 / 28%);
-    }
-
-    .door.left .handle {
-      right: 18px;
-    }
-
-    .door.right .handle {
-      left: 18px;
-    }
-
-    .hint {
-      position: absolute;
-      left: 50%;
-      bottom: 16px;
-      z-index: 8;
-      transform: translateX(-50%);
-      padding: 9px 14px;
-      border-radius: 999px;
-      color: #fff8e8;
-      background: rgb(72 45 19 / 64%);
-      font:
-        700 clamp(14px, 2vw, 16px) / 1.15
-        system-ui,
-        sans-serif;
-      white-space: nowrap;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.16s ease;
-    }
-
-    .hint.visible {
-      opacity: 1;
-    }
-
-    .scene.dragging .door,
-    .scene.dragging .hint {
-      transition: none;
-    }
-
-    .scene:focus-visible {
-      box-shadow:
-        0 0 0 4px rgb(226 172 93 / 62%),
-        0 22px 50px rgb(104 67 24 / 22%);
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .door,
-      .hint {
-        transition: none !important;
+    function composedDirection(base, requested) {
+      base = String(base || 'normal');
+      if (requested === 'normal') return base;
+      if (requested === 'reverse') {
+        if (base === 'reverse') return 'normal';
+        if (base === 'alternate') return 'alternate-reverse';
+        if (base === 'alternate-reverse') return 'alternate';
+        return 'reverse';
       }
-    }
-  </style>
-</head>
-
-<body>
-  <div
-    id="scene"
-    class="scene"
-    role="slider"
-    tabindex="0"
-    aria-label="미닫이문 열기"
-    aria-valuemin="0"
-    aria-valuemax="100"
-    aria-valuenow="4"
-  >
-    <div class="content">
-      <img src="https://soop-scroll-widget.pages.dev/image.png?v=3" alt="">
-    </div>
-
-    <div class="door left">
-      <span class="handle"></span>
-    </div>
-
-    <div class="door right">
-      <span class="handle"></span>
-    </div>
-
-    <div class="hint hint-closed">
-      누구냐? 문 닫아라.
-    </div>
-
-    <div class="hint hint-open">
-      뭘 보냐. 썩 나가라.
-    </div>
-  </div>
-
-  <script>
-    const root =
-      document.querySelector("#scene");
-
-    const closedHint =
-      document.querySelector(".hint-closed");
-
-    const openHint =
-      document.querySelector(".hint-open");
-
-    const initialOpen = 0.04;
-
-    const reducedMotion =
-      matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
-
-    const hintDelay =
-      reducedMotion ? 0 : 410;
-
-    let open = initialOpen;
-    let dragging = false;
-    let moved = false;
-    let suppressClick = false;
-    let pointerId = null;
-    let startX = 0;
-    let startOpen = open;
-    let lockedDirection = 0;
-    let userInteracted = false;
-    let hintTimer = 0;
-
-    function clamp(value) {
-      return Math.max(
-        0,
-        Math.min(1, value)
-      );
+      if (base === 'reverse' || base === 'alternate-reverse') return 'alternate-reverse';
+      return 'alternate';
     }
 
-    function hideHints() {
-      clearTimeout(hintTimer);
-
-      closedHint.classList.remove("visible");
-      openHint.classList.remove("visible");
+    function rounded(value) {
+      return String(Math.round(value * 10000) / 10000);
     }
 
-    function showHint(type) {
-      hideHints();
-
-      if (type === "closed") {
-        closedHint.classList.add("visible");
-      }
-
-      if (type === "open") {
-        openHint.classList.add("visible");
-      }
+    function scaledCssToken(token, factor, center) {
+      var match = /^(\s*)([-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)([a-z%]*)(\s*)$/i.exec(String(token));
+      if (!match) return token;
+      var value = Number(match[2]);
+      if (!isFinite(value)) return token;
+      return match[1] + rounded(center + (value - center) * factor) + match[3] + match[4];
     }
 
-    function updateHint(
-      animate = false,
-      immediate = false
-    ) {
-      hideHints();
-
-      if (dragging) {
-        return;
-      }
-
-      let type = "";
-
-      if (open <= initialOpen + 0.001) {
-        type = "closed";
-      } else if (open >= 0.999) {
-        type = "open";
-      }
-
-      if (!type) {
-        return;
-      }
-
-      if (
-        immediate ||
-        !animate ||
-        hintDelay === 0
-      ) {
-        showHint(type);
-        return;
-      }
-
-      const expectedOpen = open;
-
-      hintTimer = setTimeout(() => {
-        if (
-          dragging ||
-          Math.abs(open - expectedOpen) > 0.001
-        ) {
-          return;
+    function scaledTransform(value, factor) {
+      value = String(value == null ? '' : value);
+      if (!value || value === 'none' || factor === 1) return value;
+      return value.replace(/([a-z][a-z0-9]*)\(([^()]*)\)/gi, function (whole, rawName, rawArgs) {
+        var name = String(rawName).toLowerCase();
+        var separator = rawArgs.indexOf(',') >= 0 ? /\s*,\s*/ : /\s+/;
+        var args = rawArgs.trim().split(separator);
+        if (!args.length) return whole;
+        /* Computed matrix()/matrix3d() values are intentionally left alone.
+         * Scaling their raw coefficients can introduce skew or perspective
+         * distortion. Effect builders use the runtime intensity variable for
+         * CSS animations; this adapter handles authored transform functions. */
+        if (name === 'matrix' || name === 'matrix3d') return whole;
+        if (name.indexOf('scale') === 0) {
+          return rawName + '(' + args.map(function (token) { return scaledCssToken(token, factor, 1); }).join(',') + ')';
         }
-
-        showHint(type);
-      }, hintDelay);
+        if (name === 'rotate3d' && args.length === 4) {
+          args[3] = scaledCssToken(args[3], factor, 0);
+          return rawName + '(' + args.join(',') + ')';
+        }
+        if (name.indexOf('translate') === 0 || name.indexOf('rotate') === 0 || name.indexOf('skew') === 0) {
+          return rawName + '(' + args.map(function (token) { return scaledCssToken(token, factor, 0); }).join(',') + ')';
+        }
+        return whole;
+      });
     }
 
-    function render(
-      value,
-      animate = false,
-      immediateHint = false
-    ) {
-      open = clamp(value);
-
-      root.classList.toggle(
-        "dragging",
-        !animate
-      );
-
-      root.style.setProperty(
-        "--left-shift",
-        `${(-open * 100).toFixed(3)}%`
-      );
-
-      root.style.setProperty(
-        "--right-shift",
-        `${(open * 100).toFixed(3)}%`
-      );
-
-      root.setAttribute(
-        "aria-valuenow",
-        String(Math.round(open * 100))
-      );
-
-      updateHint(
-        animate,
-        immediateHint
-      );
+    function copyKeyframes(effect) {
+      if (!effect || typeof effect.getKeyframes !== 'function' || typeof effect.setKeyframes !== 'function') return null;
+      var frames = null;
+      try { frames = effect.getKeyframes(); } catch (_) { return null; }
+      if (!Array.isArray(frames) || !frames.length) return null;
+      return frames.map(function (frame) {
+        var copy = {};
+        Object.keys(frame || {}).forEach(function (key) {
+          if (key !== 'computedOffset') copy[key] = frame[key];
+        });
+        if (!own(copy, 'offset') && frame && isFinite(Number(frame.computedOffset))) copy.offset = Number(frame.computedOffset);
+        return copy;
+      });
     }
 
-    root.addEventListener(
-      "pointerdown",
-      event => {
-        if (
-          event.button !== 0 ||
-          event.isPrimary === false ||
-          dragging
-        ) {
-          return;
+    function intenseKeyframes(frames, factor) {
+      if (!frames || factor === 1) return frames;
+      return frames.map(function (frame) {
+        var next = {};
+        Object.keys(frame).forEach(function (key) { next[key] = frame[key]; });
+        if (own(next, 'transform')) next.transform = scaledTransform(next.transform, factor);
+        if (own(next, 'opacity')) {
+          var opacity = Number(next.opacity);
+          if (isFinite(opacity)) next.opacity = rounded(clamp(1 + (opacity - 1) * factor, 0, 1));
         }
+        return next;
+      });
+    }
 
-        event.preventDefault();
-
-        userInteracted = true;
-        dragging = true;
-        moved = false;
-        suppressClick = false;
-        pointerId = event.pointerId;
-        startX = event.clientX;
-        startOpen = open;
-        lockedDirection = 0;
-
-        root.classList.add("dragging");
-        hideHints();
-
-        try {
-          root.setPointerCapture(pointerId);
-        } catch {}
-      }
-    );
-
-    root.addEventListener(
-      "pointermove",
-      event => {
-        if (
-          !dragging ||
-          event.pointerId !== pointerId
-        ) {
-          return;
-        }
-
-        const deltaX =
-          event.clientX - startX;
-
-        const distance =
-          Math.abs(deltaX);
-
-        if (distance > 4) {
-          moved = true;
-        }
-
-        if (
-          lockedDirection === 0 &&
-          distance >= 8
-        ) {
-          lockedDirection =
-            deltaX > 0 ? 1 : -1;
-        }
-
-        if (lockedDirection === 0) {
-          return;
-        }
-
-        const rect =
-          root.getBoundingClientRect();
-
-        const directedDistance =
-          Math.max(
-            0,
-            deltaX * lockedDirection
-          );
-
-        const change =
-          directedDistance /
-          (rect.width * 0.45);
-
-        const next =
-          startOpen >= 0.5
-            ? startOpen - change
-            : startOpen + change;
-
-        render(next, false);
-      }
-    );
-
-    function finishDrag(event) {
-      if (
-        !dragging ||
-        event.pointerId !== pointerId
-      ) {
-        return;
-      }
-
-      dragging = false;
-      suppressClick = moved;
-      moved = false;
-
+    function restoreRecord(record) {
+      var animation = record.animation;
       try {
-        root.releasePointerCapture(pointerId);
-      } catch {}
-
-      pointerId = null;
-      lockedDirection = 0;
-
-      render(
-        open >= 0.48 ? 1 : 0,
-        true
-      );
+        if (record.keyframes && animation.effect && typeof animation.effect.setKeyframes === 'function') {
+          animation.effect.setKeyframes(record.keyframes);
+        }
+      } catch (_) {}
+      try {
+        if (animation.effect && typeof animation.effect.updateTiming === 'function') {
+          animation.effect.updateTiming({ delay: record.delay, direction: record.direction });
+        }
+      } catch (_) {}
+      try { animation.playbackRate = record.playbackRate; } catch (_) {}
     }
 
-    root.addEventListener(
-      "pointerup",
-      finishDrag
-    );
-
-    root.addEventListener(
-      "pointercancel",
-      finishDrag
-    );
-
-    root.addEventListener(
-      "lostpointercapture",
-      event => {
-        if (
-          dragging &&
-          event.pointerId === pointerId
-        ) {
-          dragging = false;
-          pointerId = null;
-          lockedDirection = 0;
-
-          render(
-            open >= 0.48 ? 1 : 0,
-            true
-          );
-        }
-      }
-    );
-
-    root.addEventListener(
-      "click",
-      () => {
-        if (suppressClick) {
-          suppressClick = false;
-          return;
-        }
-
-        userInteracted = true;
-
-        render(
-          startOpen >= 0.5 ? 0 : 1,
-          true
-        );
-      }
-    );
-
-    root.addEventListener(
-      "keydown",
-      event => {
-        let next = open;
-
-        if (
-          event.key === "ArrowRight" ||
-          event.key === "ArrowUp"
-        ) {
-          next += event.shiftKey
-            ? 0.2
-            : 0.08;
-        } else if (
-          event.key === "ArrowLeft" ||
-          event.key === "ArrowDown"
-        ) {
-          next -= event.shiftKey
-            ? 0.2
-            : 0.08;
-        } else if (event.key === "Home") {
-          next = 0;
-        } else if (event.key === "End") {
-          next = 1;
-        } else if (
-          event.key === "Enter" ||
-          event.key === " "
-        ) {
-          next = open >= 0.5 ? 0 : 1;
-        } else {
-          return;
-        }
-
-        event.preventDefault();
-        userInteracted = true;
-
-        render(next, true);
-      }
-    );
-
-    if (!reducedMotion) {
-      setTimeout(() => {
-        if (userInteracted) return;
-
-        render(1, true);
-
-        setTimeout(() => {
-          if (!userInteracted) {
-            render(initialOpen, true);
-          }
-        }, 1550);
-      }, 650);
+    function detachRecord(record) {
+      if (!record || !record.retire || !record.animation || !record.animation.removeEventListener) return;
+      try { record.animation.removeEventListener('finish', record.retire); } catch (_) {}
+      try { record.animation.removeEventListener('cancel', record.retire); } catch (_) {}
     }
 
-    render(
-      open,
-      true,
-      true
-    );
-  </script>
+    function applyRecord(record) {
+      var animation = record.animation;
+      try {
+        if (record.keyframes && animation.effect && typeof animation.effect.setKeyframes === 'function') {
+          animation.effect.setKeyframes(intenseKeyframes(record.keyframes, options.intensity));
+        }
+      } catch (_) {}
+      try {
+        if (animation.effect && typeof animation.effect.updateTiming === 'function') {
+          animation.effect.updateTiming({
+            /* playbackRate also scales an effect delay. Multiplying only the
+             * added delay keeps the user-facing delay independent of speed. */
+            delay: record.delay + options.delay * 1000 * options.speed,
+            direction: composedDirection(record.direction, options.direction)
+          });
+        }
+      } catch (_) {}
+      try {
+        if (record.playbackRate !== 0) animation.playbackRate = record.playbackRate * options.speed;
+      } catch (_) {}
+    }
+
+    function manageAnimation(animation) {
+      if (!installed || !animation || records.has(animation) || retiredAnimations.has(animation)) return animation;
+      var timing = null;
+      try {
+        timing = animation.effect && typeof animation.effect.getTiming === 'function'
+          ? animation.effect.getTiming() : null;
+      } catch (_) {}
+      var record = {
+        animation: animation,
+        playbackRate: Number(animation.playbackRate),
+        delay: timing && isFinite(Number(timing.delay)) ? Number(timing.delay) : 0,
+        direction: timing && timing.direction ? String(timing.direction) : 'normal',
+        keyframes: copyKeyframes(animation.effect)
+      };
+      if (!isFinite(record.playbackRate)) record.playbackRate = 1;
+      records.set(animation, record);
+      if (typeof animation.addEventListener === 'function') {
+        record.retire = function () {
+          records.delete(animation);
+          retiredAnimations.add(animation);
+          detachRecord(record);
+        };
+        try { animation.addEventListener('finish', record.retire, { once: true }); } catch (_) {}
+        try { animation.addEventListener('cancel', record.retire, { once: true }); } catch (_) {}
+      }
+      applyRecord(record);
+      return animation;
+    }
+
+    function motionAnimate() {
+      var animation = nativeAnimate.apply(this, arguments);
+      return manageAnimation(animation);
+    }
+
+    function scan() {
+      if (!installed || !document || typeof document.getAnimations !== 'function') return 0;
+      var animations = [];
+      try { animations = document.getAnimations(); } catch (_) {}
+      for (var i = 0; i < animations.length; i++) manageAnimation(animations[i]);
+      return animations.length;
+    }
+
+    function scheduleScan() {
+      if (!installed || scanFrame) return;
+      if (typeof nativeRequestAnimationFrame === 'function') {
+        scanFrame = nativeRequestAnimationFrame.call(target, function () { scanFrame = 0; scan(); });
+      } else {
+        scanFrame = nativeSetTimeout.call(target, function () { scanFrame = 0; scan(); }, 0);
+      }
+    }
+
+    function animationStarted(event) {
+      if (!event || !event.target || typeof event.target.getAnimations !== 'function') {
+        scheduleScan();
+        return;
+      }
+      var animations = [];
+      try { animations = event.target.getAnimations(); } catch (_) {}
+      for (var i = 0; i < animations.length; i++) manageAnimation(animations[i]);
+    }
+
+    function rememberRoot() {
+      var html = document.documentElement;
+      if (!html || rootSnapshot) return;
+      var names = ['--mk-motion-preset', '--mk-motion-speed', '--mk-motion-delay', '--mk-motion-direction',
+        '--mk-motion-intensity', '--mk-motion-intensity-delta'];
+      var attrs = ['data-mk-motion-runtime', 'data-mk-motion-preset', 'data-mk-motion-direction'];
+      rootSnapshot = { styles: {}, priorities: {}, attrs: {} };
+      names.forEach(function (name) {
+        rootSnapshot.styles[name] = html.style.getPropertyValue(name);
+        rootSnapshot.priorities[name] = html.style.getPropertyPriority(name);
+      });
+      attrs.forEach(function (name) {
+        rootSnapshot.attrs[name] = html.hasAttribute(name) ? html.getAttribute(name) : null;
+      });
+    }
+
+    function applyRoot() {
+      var html = document.documentElement;
+      if (!html) return;
+      rememberRoot();
+      html.style.setProperty('--mk-motion-preset', options.preset);
+      html.style.setProperty('--mk-motion-speed', String(options.speed));
+      html.style.setProperty('--mk-motion-delay', options.delay + 's');
+      html.style.setProperty('--mk-motion-direction', options.direction);
+      html.style.setProperty('--mk-motion-intensity', String(options.intensity));
+      html.style.setProperty('--mk-motion-intensity-delta', String(Math.round((options.intensity - 1) * 1000) / 1000));
+      html.setAttribute('data-mk-motion-runtime', VERSION);
+      html.setAttribute('data-mk-motion-preset', options.preset);
+      html.setAttribute('data-mk-motion-direction', options.direction);
+    }
+
+    function restoreRoot() {
+      var html = document.documentElement;
+      if (!html || !rootSnapshot) return;
+      Object.keys(rootSnapshot.styles).forEach(function (name) {
+        var value = rootSnapshot.styles[name];
+        if (value) html.style.setProperty(name, value, rootSnapshot.priorities[name] || '');
+        else html.style.removeProperty(name);
+      });
+      Object.keys(rootSnapshot.attrs).forEach(function (name) {
+        var value = rootSnapshot.attrs[name];
+        if (value == null) html.removeAttribute(name);
+        else html.setAttribute(name, value);
+      });
+      rootSnapshot = null;
+    }
+
+    function dispatchChange(type) {
+      try {
+        var event = typeof target.CustomEvent === 'function'
+          ? new target.CustomEvent('motionkit:motionchange', { detail: { type: type, options: copyOptions() } })
+          : null;
+        if (event) document.dispatchEvent(event);
+      } catch (_) {}
+    }
+
+    function patch() {
+      if (installed) return;
+      installed = true;
+      activationAt = now() + options.delay * 1000;
+      try { target.setTimeout = motionSetTimeout; } catch (_) {}
+      try { target.setInterval = motionSetInterval; } catch (_) {}
+      if (elementPrototype && typeof nativeAnimate === 'function') {
+        try { elementPrototype.animate = motionAnimate; } catch (_) {}
+      }
+      document.addEventListener('animationstart', animationStarted, true);
+      if (typeof target.MutationObserver === 'function' && document.documentElement) {
+        observer = new target.MutationObserver(scheduleScan);
+        observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true,
+          attributeFilter: ['class', 'style'] });
+      }
+      scanInterval = nativeSetInterval.call(target, scan, 500);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', scheduleScan, { once: true });
+      }
+      applyRoot();
+      scheduleScan();
+    }
+
+    function configure(raw) {
+      var next = normalize(raw);
+      records.forEach(restoreRecord);
+      options = next;
+      activationAt = now() + options.delay * 1000;
+      if (!installed) patch();
+      applyRoot();
+      records.forEach(applyRecord);
+      scan();
+      dispatchChange('configure');
+      return copyOptions();
+    }
+
+    function restore() {
+      if (!installed) return copyOptions();
+      installed = false;
+      if (observer) { observer.disconnect(); observer = null; }
+      if (scanInterval) { nativeClearInterval.call(target, scanInterval); scanInterval = 0; }
+      if (scanFrame) {
+        if (typeof nativeCancelAnimationFrame === 'function') nativeCancelAnimationFrame.call(target, scanFrame);
+        else nativeClearTimeout.call(target, scanFrame);
+        scanFrame = 0;
+      }
+      document.removeEventListener('animationstart', animationStarted, true);
+      try { if (target.setTimeout === motionSetTimeout) target.setTimeout = nativeSetTimeout; } catch (_) {}
+      try { if (target.setInterval === motionSetInterval) target.setInterval = nativeSetInterval; } catch (_) {}
+      if (elementPrototype && elementPrototype.animate === motionAnimate) {
+        try { elementPrototype.animate = nativeAnimate; } catch (_) {}
+      }
+      records.forEach(function (record) { restoreRecord(record); detachRecord(record); });
+      records.clear();
+      restoreRoot();
+      dispatchChange('restore');
+      return copyOptions();
+    }
+
+    var controller = Object.freeze({
+      __motionKitRuntime: true,
+      version: VERSION,
+      normalizeOptions: normalize,
+      configure: configure,
+      apply: configure,
+      restore: restore,
+      scan: scan,
+      getOptions: copyOptions,
+      getState: function () {
+        return { installed: installed, managedAnimations: records.size, options: copyOptions() };
+      }
+    });
+    target.MotionKitMotionRuntime = controller;
+    patch();
+    return controller;
+  })(window,{"preset":"standard","speed":1,"delay":0,"direction":"normal","intensity":1});
+</script>
+<!-- motionkit-motion-runtime:end -->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>scroll reveal</title>
+<script>
+(function(){try{
+if(!('IntersectionObserver' in window))return;
+var io=new IntersectionObserver(function(es){
+  var v=es[0]&&es[0].isIntersecting;
+  document.documentElement.classList.toggle('mk-off',!v);
+},{threshold:0});
+io.observe(document.documentElement);
+}catch(e){}})();
+</script>
+<style>
+.mk-off *{animation-play-state:paused !important}
+html,body{height:100%;margin:0;padding:0;overflow:hidden;background:transparent}
+body{display:flex;justify-content:center;align-items:center;-webkit-tap-highlight-color:transparent}
+body{user-select:none;-webkit-user-select:none}
+.scroll{--crop:45.08%;--left-shift:-8%;--right-shift:8%;--left-pos:46%;--right-pos:54%;--seal-scale:.964;--seal-opacity:.9424;--hint-opacity:.92;position:relative;width:min(94vw,860px);max-height:90vh;aspect-ratio:16 / 9;overflow:hidden;border-radius:12px;background:#f5c2c2;box-shadow:0 22px 55px rgba(38,26,16,.28);touch-action:none;cursor:ew-resize;outline:none}
+.photo,.paper,.shade{position:absolute;inset:0}
+.photo{overflow:hidden;clip-path:inset(0 var(--crop) 0 var(--crop));transition:clip-path .55s cubic-bezier(.2,.8,.2,1);will-change:clip-path}
+.photo img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none;will-change:transform,object-position}
+.paper{pointer-events:none;background-color:#f5c2c2;background-image:linear-gradient(90deg,rgba(98,65,36,.08) 1px,transparent 1px),radial-gradient(circle at 30% 30%,rgba(255,255,255,.28),transparent 46%);background-size:13px 100%,100% 100%;transition:transform .55s cubic-bezier(.2,.8,.2,1);will-change:transform}
+.paper.left{right:50%;transform:translateX(var(--left-shift));box-shadow:inset -12px 0 22px rgba(78,52,31,.12)}
+.paper.right{left:50%;transform:translateX(var(--right-shift));box-shadow:inset 12px 0 22px rgba(78,52,31,.12)}
+.roller{position:absolute;top:-2%;bottom:-2%;width:22px;z-index:5;pointer-events:none;border-radius:999px;background:linear-gradient(90deg,#6d4227,#c69157 30%,#7b4b2d 67%,#4b2b1b);box-shadow:0 5px 12px rgba(28,16,9,.35);transition:left .55s cubic-bezier(.2,.8,.2,1);will-change:left}
+.roller::before,.roller::after{content:"";position:absolute;left:-5px;width:32px;height:10px;border-radius:999px;background:linear-gradient(#d1a06a,#604027)}
+.roller::before{top:0}.roller::after{bottom:0}
+.roller.left{left:var(--left-pos);transform:translateX(-50%)}.roller.right{left:var(--right-pos);transform:translateX(-50%)}
+.seal{position:absolute;left:50%;top:50%;z-index:6;width:34px;height:34px;border-radius:50%;transform:translate(-50%,-50%) scale(var(--seal-scale));background:#a43c31;box-shadow:0 3px 8px rgba(55,19,14,.35),inset 0 0 0 4px rgba(255,219,177,.18);opacity:var(--seal-opacity);transition:transform .55s ease,opacity .55s ease;pointer-events:none}
+.hint{position:absolute;left:50%;bottom:14px;z-index:8;transform:translateX(-50%);padding:7px 11px;border-radius:999px;background:rgba(24,18,13,.58);color:#fff;font:600 12px/1 -apple-system,"Segoe UI",sans-serif;opacity:var(--hint-opacity);pointer-events:none;white-space:nowrap}
+.scroll.dragging .photo,.scroll.dragging .paper,.scroll.dragging .roller,.scroll.dragging .seal{transition:none}
+.scroll:focus-visible{box-shadow:0 0 0 4px rgba(177,116,62,.58),0 22px 55px rgba(38,26,16,.28)}
+@media(prefers-reduced-motion:reduce){.photo,.paper,.roller,.seal{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="scroll" id="scroll" role="slider" tabindex="0" aria-label="두루마리 펼치기" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><div class="photo"><img data-mk-adjust-box="photo" src="https://bobobo-1yh.pages.dev/content/f64cd5ddb4d940d99629/rev_16528aec9a3f4b28b50bf0ba0649f288/1.webp?v=mtgdbnhe-19i5h1m10ny2wi" data-mk-adjust-live="photo" style="object-position:9.93% 0.00%;transform:translate(4.14%,5.16%) scale(1.115);transform-origin:center center;" alt=""></div><div class="paper left"></div><div class="paper right"></div><div class="roller left"></div><div class="roller right"></div><div class="seal"></div><div class="hint">가운데를 잡고 좌우로 펼쳐 보세요</div></div>
+<script>
+(function(){
+var root=document.getElementById("scroll"),p=.08,drag=false,moved=false,suppressClick=false,user=false,startX=0,downP=p,activeId=null;
+function clamp(v){return Math.max(0,Math.min(1,v));}
+function set(v,animate){p=clamp(v);root.classList.toggle("dragging",!animate);root.style.setProperty("--crop",((1-p)*49).toFixed(3)+"%");root.style.setProperty("--left-shift",(-p*100).toFixed(3)+"%");root.style.setProperty("--right-shift",(p*100).toFixed(3)+"%");root.style.setProperty("--left-pos",(50-p*50).toFixed(3)+"%");root.style.setProperty("--right-pos",(50+p*50).toFixed(3)+"%");root.style.setProperty("--seal-scale",(1-p*.45).toFixed(4));root.style.setProperty("--seal-opacity",(1-p*.72).toFixed(4));root.style.setProperty("--hint-opacity",(1-p).toFixed(4));root.setAttribute("aria-valuenow",String(Math.round(p*100)));}
+function at(e){var r=root.getBoundingClientRect();return clamp(Math.abs(e.clientX-(r.left+r.width/2))/(r.width*.5));}
+root.addEventListener("pointerdown",function(e){if(e.button!==0||e.isPrimary===false||drag)return;e.preventDefault();user=true;drag=true;moved=false;suppressClick=false;startX=e.clientX;downP=p;activeId=e.pointerId;set(at(e),false);try{root.setPointerCapture(activeId);}catch(x){}});
+root.addEventListener("pointermove",function(e){if(!drag||e.pointerId!==activeId)return;if(Math.abs(e.clientX-startX)>4)moved=true;set(at(e),false);});
+function up(e){if(!drag||e.pointerId!==activeId)return;drag=false;suppressClick=moved;moved=false;try{root.releasePointerCapture(activeId);}catch(x){}activeId=null;set(p>.48?1:0,true);}
+root.addEventListener("pointerup",up);root.addEventListener("pointercancel",up);root.addEventListener("lostpointercapture",function(e){if(drag&&e.pointerId===activeId){drag=false;suppressClick=moved;moved=false;activeId=null;set(p>.48?1:0,true);}});
+root.addEventListener("click",function(e){if(e.detail!==0&&suppressClick){suppressClick=false;return;}suppressClick=false;user=true;var basis=e.detail===0?p:downP;set(basis>.5?0:1,true);});
+root.addEventListener("keydown",function(e){var v=p;if(e.key==="ArrowRight"||e.key==="ArrowUp")v+=(e.shiftKey ? .2 : .08);else if(e.key==="ArrowLeft"||e.key==="ArrowDown")v-=(e.shiftKey ? .2 : .08);else if(e.key==="Home")v=0;else if(e.key==="End")v=1;else if(e.key==="Enter"||e.key===" ")v=p>.5?0:1;else return;e.preventDefault();user=true;set(v,true);});
+if(!matchMedia("(prefers-reduced-motion:reduce)").matches)setTimeout(function(){if(user)return;set(1,true);setTimeout(function(){if(!user)set(.08,true);},1500);},650);
+})();
+</script>
 </body>
 </html>
