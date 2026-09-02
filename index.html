@@ -40,9 +40,9 @@
     }
 
     .scene {
-      --open: .035;
-      --left-shift: -3.5%;
-      --right-shift: 3.5%;
+      --open: .065;
+      --left-shift: -6.5%;
+      --right-shift: 6.5%;
       position: relative;
       width: min(96vw, 960px);
       max-height: 92vh;
@@ -352,7 +352,7 @@
     const closedHint = document.querySelector(".hint-closed");
     const openHint = document.querySelector(".hint-open");
 
-    const initialOpen = 0.035;
+    const initialOpen = 0.065;
     const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const hintDelay = reducedMotion ? 0 : 560;
 
