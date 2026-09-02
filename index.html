@@ -320,13 +320,13 @@
     role="slider"
     tabindex="0"
     aria-label="프로필 이미지를 여는 미닫이문"
-    aria-valuemin="0"
+    aria-valuemin="7"
     aria-valuemax="100"
-    aria-valuenow="4"
+    aria-valuenow="7"
     aria-valuetext="거의 닫힘"
   >
     <div class="content">
-      <img src="./image.webp" alt="">
+      <img src="./image.webp?v=1" alt="">
     </div>
 
     <div class="door left" aria-hidden="true">
@@ -343,8 +343,8 @@
       </div>
     </div>
 
-    <div class="hint hint-closed">으, 꼬붕이잖아…</div>
-    <div class="hint hint-open">아, 나가라고!</div>
+    <div class="hint hint-closed">뭘 보냐</div>
+    <div class="hint hint-open">문 닫고 꺼져라!</div>
   </div>
 
   <script>
@@ -363,12 +363,11 @@
     let pointerId = null;
     let startX = 0;
     let startOpen = open;
-    let lockedDirection = 0;
     let userInteracted = false;
     let hintTimer = 0;
 
     function clamp(value) {
-      return Math.max(0, Math.min(1, value));
+      return Math.max(initialOpen, Math.min(1, value));
     }
 
     function hideHints() {
@@ -432,7 +431,6 @@
       pointerId = event.pointerId;
       startX = event.clientX;
       startOpen = open;
-      lockedDirection = 0;
       root.classList.add("dragging");
       hideHints();
 
@@ -445,17 +443,15 @@
       if (!dragging || event.pointerId !== pointerId) return;
 
       const deltaX = event.clientX - startX;
-      const distance = Math.abs(deltaX);
-      if (distance > 4) moved = true;
-      if (lockedDirection === 0 && distance >= 8) {
-        lockedDirection = deltaX > 0 ? 1 : -1;
-      }
-      if (lockedDirection === 0) return;
+      if (Math.abs(deltaX) <= 4) return;
+      moved = true;
 
       const rect = root.getBoundingClientRect();
-      const directedDistance = Math.max(0, deltaX * lockedDirection);
-      const change = directedDistance / (rect.width * .44);
-      const next = startOpen >= .5 ? startOpen - change : startOpen + change;
+      const centerX = rect.left + rect.width / 2;
+      const startDistance = Math.abs(startX - centerX);
+      const currentDistance = Math.abs(event.clientX - centerX);
+      const change = (currentDistance - startDistance) / (rect.width * .44);
+      const next = startOpen + change;
       render(next, false);
     });
 
@@ -469,7 +465,6 @@
         root.releasePointerCapture(pointerId);
       } catch {}
       pointerId = null;
-      lockedDirection = 0;
       render(open >= .48 ? 1 : initialOpen, true);
     }
 
@@ -479,7 +474,6 @@
       if (!dragging || event.pointerId !== pointerId) return;
       dragging = false;
       pointerId = null;
-      lockedDirection = 0;
       render(open >= .48 ? 1 : initialOpen, true);
     });
 
