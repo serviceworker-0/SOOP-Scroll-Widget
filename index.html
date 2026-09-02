@@ -21,7 +21,6 @@
       overflow: hidden;
       background: transparent;
     }
-
     body {
       display: flex;
       align-items: center;
@@ -35,7 +34,6 @@
     .scene {
       --left-shift: -4%;
       --right-shift: 4%;
-
       position: relative;
       width: min(94vw, 860px);
       max-height: 90vh;
@@ -57,7 +55,6 @@
       inset: 0;
       background: #f8eccf;
     }
-
     .content img {
       display: block;
       width: 100%;
@@ -66,7 +63,6 @@
       pointer-events: none;
       -webkit-user-drag: none;
     }
-
     .door {
       position: absolute;
       top: 0;
@@ -88,7 +84,6 @@
         cubic-bezier(.2, .8, .2, 1);
       will-change: transform;
     }
-
     .door::before {
       content: "";
       position: absolute;
@@ -112,7 +107,6 @@
       box-shadow:
         inset 0 0 14px rgb(148 96 31 / 10%);
     }
-
     .door.left {
       left: 0;
       border-right: 5px solid #9f682c;
@@ -126,7 +120,6 @@
       transform:
         translateX(var(--right-shift));
     }
-
     .handle {
       position: absolute;
       top: 50%;
@@ -148,7 +141,6 @@
         inset 2px 0 3px rgb(255 234 183 / 24%),
         0 2px 5px rgb(74 44 17 / 28%);
     }
-
     .door.left .handle {
       right: 18px;
     }
@@ -156,7 +148,6 @@
     .door.right .handle {
       left: 18px;
     }
-
     .hint {
       position: absolute;
       left: 50%;
@@ -180,7 +171,6 @@
     .hint.visible {
       opacity: 1;
     }
-
     .scene.dragging .door,
     .scene.dragging .hint {
       transition: none;
@@ -200,7 +190,6 @@
     }
   </style>
 </head>
-
 <body>
   <div
     id="scene"
@@ -208,7 +197,7 @@
     role="slider"
     tabindex="0"
     aria-label="Sliding Door"
-    aria-valuemin="0"
+    aria-valuemin="4"
     aria-valuemax="100"
     aria-valuenow="4"
   >
@@ -225,11 +214,10 @@
     </div>
 
     <div class="hint hint-closed">
-      뭘 보냐
+      윽, 꼬붕 발견…
     </div>
-
     <div class="hint hint-open">
-      문 닫고 꺼져라!
+      아! 나가라고!
     </div>
   </div>
 
@@ -252,7 +240,6 @@
 
     const hintDelay =
       reducedMotion ? 0 : 410;
-
     let open = initialOpen;
     let dragging = false;
     let moved = false;
@@ -266,14 +253,13 @@
 
     function clamp(value) {
       return Math.max(
-        0,
+        initialOpen,
         Math.min(1, value)
       );
     }
 
     function hideHints() {
       clearTimeout(hintTimer);
-
       closedHint.classList.remove("visible");
       openHint.classList.remove("visible");
     }
@@ -301,7 +287,6 @@
       }
 
       let type = "";
-
       if (open <= initialOpen + 0.001) {
         type = "closed";
       } else if (open >= 0.999) {
@@ -330,7 +315,6 @@
         ) {
           return;
         }
-
         showHint(type);
       }, hintDelay);
     }
@@ -356,7 +340,6 @@
         "--right-shift",
         `${(open * 100).toFixed(3)}%`
       );
-
       root.setAttribute(
         "aria-valuenow",
         String(Math.round(open * 100))
@@ -380,7 +363,6 @@
         }
 
         event.preventDefault();
-
         userInteracted = true;
         dragging = true;
         moved = false;
@@ -398,7 +380,6 @@
         } catch {}
       }
     );
-
     root.addEventListener(
       "pointermove",
       event => {
@@ -418,7 +399,6 @@
         if (distance > 4) {
           moved = true;
         }
-
         if (
           lockedDirection === 0 &&
           distance >= 8
@@ -443,7 +423,6 @@
         const change =
           directedDistance /
           (rect.width * 0.45);
-
         const next =
           startOpen >= 0.5
             ? startOpen - change
@@ -471,9 +450,8 @@
 
       pointerId = null;
       lockedDirection = 0;
-
       render(
-        open >= 0.48 ? 1 : 0,
+        open >= 0.48 ? 1 : initialOpen,
         true
       );
     }
@@ -498,9 +476,8 @@
           dragging = false;
           pointerId = null;
           lockedDirection = 0;
-
           render(
-            open >= 0.48 ? 1 : 0,
+            open >= 0.48 ? 1 : initialOpen,
             true
           );
         }
@@ -518,7 +495,7 @@
         userInteracted = true;
 
         render(
-          startOpen >= 0.5 ? 0 : 1,
+          startOpen >= 0.5 ? initialOpen : 1,
           true
         );
       }
@@ -528,7 +505,6 @@
       "keydown",
       event => {
         let next = open;
-
         if (
           event.key === "ArrowRight" ||
           event.key === "ArrowUp"
@@ -544,18 +520,17 @@
             ? 0.2
             : 0.08;
         } else if (event.key === "Home") {
-          next = 0;
+          next = initialOpen;
         } else if (event.key === "End") {
           next = 1;
         } else if (
           event.key === "Enter" ||
           event.key === " "
         ) {
-          next = open >= 0.5 ? 0 : 1;
+          next = open >= 0.5 ? initialOpen : 1;
         } else {
           return;
         }
-
         event.preventDefault();
         userInteracted = true;
 
