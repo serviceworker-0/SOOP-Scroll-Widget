@@ -433,7 +433,6 @@
       startX = event.clientX;
       startOpen = open;
       lockedDirection = 0;
-      root.classList.add("dragging");
       hideHints();
 
       try {
@@ -462,26 +461,23 @@
     function finishDrag(event) {
       if (!dragging || event.pointerId !== pointerId) return;
 
+      const wasDrag = moved;
       dragging = false;
-      suppressClick = moved;
+      suppressClick = wasDrag;
       moved = false;
       try {
         root.releasePointerCapture(pointerId);
       } catch {}
       pointerId = null;
       lockedDirection = 0;
-      render(open >= .48 ? 1 : initialOpen, true);
+      // A plain click toggles only in the click handler; only drags snap here.
+      if (wasDrag) render(open >= .48 ? 1 : initialOpen, true);
+      else updateHint(true);
     }
 
     root.addEventListener("pointerup", finishDrag);
     root.addEventListener("pointercancel", finishDrag);
-    root.addEventListener("lostpointercapture", event => {
-      if (!dragging || event.pointerId !== pointerId) return;
-      dragging = false;
-      pointerId = null;
-      lockedDirection = 0;
-      render(open >= .48 ? 1 : initialOpen, true);
-    });
+    root.addEventListener("lostpointercapture", finishDrag);
 
     root.addEventListener("click", () => {
       if (suppressClick) {
