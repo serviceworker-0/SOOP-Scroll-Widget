@@ -51,7 +51,6 @@
       overflow: hidden;
       border: clamp(8px, 1.25vw, 13px) solid transparent;
       border-radius: clamp(4px, .65vw, 7px);
-      outline: none;
       background:
         linear-gradient(#c7a06e, #ddb989) padding-box,
         linear-gradient(105deg, #efd9b8, #b88b57 42%, #e5c59a 72%, #9c7349) border-box;
@@ -275,12 +274,6 @@
       transition: none;
     }
 
-    .scene:focus-visible {
-      box-shadow:
-        0 0 0 4px rgb(224 184 128 / 62%),
-        0 18px 38px rgb(54 35 17 / 18%);
-    }
-
     @media (max-width: 520px) {
       body {
         padding: 7px;
@@ -317,13 +310,8 @@
   <div
     id="scene"
     class="scene"
-    role="slider"
-    tabindex="0"
+    role="group"
     aria-label="미닫이문"
-    aria-valuemin="7"
-    aria-valuemax="100"
-    aria-valuenow="7"
-    aria-valuetext="거의 닫힘"
   >
     <div class="content">
       <img src="./image.webp" alt="">
@@ -411,12 +399,6 @@
       root.style.setProperty("--left-shift", `${(-open * 100).toFixed(3)}%`);
       root.style.setProperty("--right-shift", `${(open * 100).toFixed(3)}%`);
 
-      const percentage = Math.round(open * 100);
-      root.setAttribute("aria-valuenow", String(percentage));
-      root.setAttribute(
-        "aria-valuetext",
-        percentage < 10 ? "거의 닫힘" : percentage > 90 ? "열림" : `${percentage}% 열림`
-      );
       updateHint(animate, immediateHint);
     }
 
@@ -475,27 +457,6 @@
     root.addEventListener("pointerup", finishDrag);
     root.addEventListener("pointercancel", finishDrag);
     root.addEventListener("lostpointercapture", finishDrag);
-
-    root.addEventListener("keydown", event => {
-      let next = open;
-      if (event.key === "ArrowRight" || event.key === "ArrowUp") {
-        next += event.shiftKey ? .2 : .08;
-      } else if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
-        next -= event.shiftKey ? .2 : .08;
-      } else if (event.key === "Home") {
-        next = initialOpen;
-      } else if (event.key === "End") {
-        next = 1;
-      } else if (event.key === "Enter" || event.key === " ") {
-        next = open >= .5 ? initialOpen : 1;
-      } else {
-        return;
-      }
-
-      event.preventDefault();
-      userInteracted = true;
-      render(next, true);
-    });
 
     if (!reducedMotion) {
       setTimeout(() => {
