@@ -359,7 +359,6 @@
     let open = initialOpen;
     let dragging = false;
     let moved = false;
-    let suppressClick = false;
     let pointerId = null;
     let startX = 0;
     let startOpen = open;
@@ -428,7 +427,6 @@
       userInteracted = true;
       dragging = true;
       moved = false;
-      suppressClick = false;
       pointerId = event.pointerId;
       startX = event.clientX;
       startOpen = open;
@@ -463,14 +461,13 @@
 
       const wasDrag = moved;
       dragging = false;
-      suppressClick = wasDrag;
       moved = false;
       try {
         root.releasePointerCapture(pointerId);
       } catch {}
       pointerId = null;
       lockedDirection = 0;
-      // A plain click toggles only in the click handler; only drags snap here.
+      // Clicks and taps leave the position unchanged; only drags snap here.
       if (wasDrag) render(open >= .48 ? 1 : initialOpen, true);
       else updateHint(true);
     }
@@ -478,15 +475,6 @@
     root.addEventListener("pointerup", finishDrag);
     root.addEventListener("pointercancel", finishDrag);
     root.addEventListener("lostpointercapture", finishDrag);
-
-    root.addEventListener("click", () => {
-      if (suppressClick) {
-        suppressClick = false;
-        return;
-      }
-      userInteracted = true;
-      render(open >= .5 ? initialOpen : 1, true);
-    });
 
     root.addEventListener("keydown", event => {
       let next = open;
